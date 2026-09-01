@@ -1,5 +1,6 @@
 import { Solari } from "@solarisdk/browser"
 import OpenAI from "openai"
+import patchrightBrowsers from "../node_modules/patchright-core/browsers.json" with { type: "json" }
 
 import { runId, scoreRun } from "./core.js"
 import type { AgentAction, Challenge, ElementCandidate, FailureCategory, RunOptions, RunResult, RunStep } from "./types.js"
@@ -28,6 +29,7 @@ type PageState = {
 }
 
 const MAX_STEPS = 12
+if (!patchrightBrowsers.browsers.length) throw new Error("Patchright browser metadata is missing.")
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 const dangerousButton = /\b(place order|buy now|pay now|confirm purchase|delete|send message|post|publish|submit application)\b/i
 

@@ -3,7 +3,6 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 
 import { buildDomainReport, demoResult, detectRegression, validateChallenge } from "./core.js"
 import { missionPacks } from "./mission-packs.js"
-import { runChallenge } from "./runner.js"
 import { allRuns, dailyRunCount, getRun, leaderboard, loadRuns, runsForHost, saveRun } from "./store.js"
 import type { DomainReport, RunResult } from "./types.js"
 
@@ -155,6 +154,7 @@ const server = createServer(async (request, response) => {
       return
     }
     const challenge = await validateChallenge(await readJson(request))
+    const { runChallenge } = await import("./runner.js")
     const result = await runChallenge(challenge)
     result.regression = detectRegression(result, allRuns())
     await saveRun(result)

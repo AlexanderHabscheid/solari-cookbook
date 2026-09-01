@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Make an AI clanker speedrun any website. Watch the replay. Farm aura.">
+  <!-- SHARE_META -->
+  <title>CLANKER ANY%</title>
+  <style>
+    :root { --acid:#c7ff00; --pink:#ff3cab; --black:#090909; --paper:#f3f1e8; --gray:#8c8c84; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--paper); background:var(--black); font:15px/1.35 Arial,Helvetica,sans-serif; }
+    button,input,textarea { font:inherit; }
+    button { cursor:pointer; }
+    .noise { position:fixed; inset:0; pointer-events:none; opacity:.05; z-index:9; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+    .ticker { overflow:hidden; padding:8px 0; color:var(--black); background:var(--acid); font-weight:1000; text-transform:uppercase; white-space:nowrap; transform:rotate(-1deg) scale(1.01); }
+    .ticker span { display:inline-block; padding-left:100%; animation:ticker 24s linear infinite; }
+    @keyframes ticker { to { transform:translateX(-100%); } }
+    header { display:flex; justify-content:space-between; align-items:center; max-width:1180px; margin:auto; padding:22px 24px; }
+    .logo { font-weight:1000; letter-spacing:-.06em; font-size:20px; }
+    .logo i { color:var(--acid); font-style:normal; }
+    .live { color:var(--acid); font:11px ui-monospace,monospace; letter-spacing:.15em; }
+    main { max-width:1180px; margin:auto; padding:40px 24px 100px; }
+    .hero { display:grid; grid-template-columns:1.16fr .84fr; gap:46px; align-items:end; min-height:590px; }
+    .kicker { color:var(--pink); font-weight:1000; text-transform:uppercase; letter-spacing:.13em; }
+    h1 { margin:10px 0 22px; font-size:clamp(70px,12vw,164px); line-height:.73; letter-spacing:-.09em; text-transform:uppercase; }
+    h1 span { display:block; color:var(--acid); -webkit-text-stroke:2px var(--acid); }
+    .dek { max-width:680px; margin:0; color:#b5b5ae; font-size:clamp(17px,2vw,23px); }
+    .dek b { color:var(--paper); }
+    .form { position:relative; padding:24px; color:var(--black); background:var(--paper); box-shadow:12px 12px 0 var(--pink); transform:rotate(1.2deg); }
+    .form::before { content:"USER-GENERATED BEEF"; position:absolute; right:-14px; top:-20px; padding:7px 10px; color:var(--black); background:var(--acid); font:900 10px ui-monospace,monospace; transform:rotate(4deg); }
+    .form h2 { margin:0 0 18px; font-size:25px; line-height:1; letter-spacing:-.05em; text-transform:uppercase; }
+    label { display:block; margin-top:13px; font:900 10px ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; }
+    input,textarea { width:100%; margin-top:6px; padding:13px; border:2px solid var(--black); border-radius:0; color:var(--black); background:#fff; outline:none; }
+    input:focus,textarea:focus { box-shadow:4px 4px 0 var(--acid); }
+    textarea { min-height:106px; resize:vertical; }
+    .submit { width:100%; margin-top:15px; padding:16px; border:2px solid var(--black); color:var(--acid); background:var(--black); font-weight:1000; text-transform:uppercase; }
+    .submit:hover { color:var(--black); background:var(--acid); }
+    .submit:disabled { opacity:.55; cursor:wait; }
+    .demo { width:100%; margin-top:8px; padding:10px; border:0; background:transparent; text-decoration:underline; font-weight:900; }
+    .examples { display:flex; flex-wrap:wrap; gap:8px; margin-top:22px; }
+    .examples button { padding:7px 10px; border:1px solid #4a4a46; color:#aaa; background:transparent; font:11px ui-monospace,monospace; }
+    .examples button:hover { color:var(--acid); border-color:var(--acid); }
+    .manifesto { display:grid; grid-template-columns:repeat(4,1fr); margin:90px 0 0; border-block:1px solid #343430; }
+    .fact { padding:23px 18px; border-right:1px solid #343430; }
+    .fact:last-child { border:0; }
+    .fact strong { display:block; color:var(--acid); font-size:31px; letter-spacing:-.05em; }
+    .fact small { color:#7f7f78; text-transform:uppercase; }
+    .protocols { margin-top:90px; }
+    .protocols h2 { margin:0 0 8px; font-size:clamp(36px,7vw,80px); letter-spacing:-.07em; text-transform:uppercase; }
+    .protocols > p { max-width:760px; color:#8c8c84; }
+    .packgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:24px; }
+    .pack { padding:22px; border:1px solid #45453f; background:#111; }
+    .pack b { color:var(--pink); font-size:20px; text-transform:uppercase; }
+    .pack p { min-height:42px; color:#92928b; }
+    .pack ol { padding-left:20px; font:11px/1.5 ui-monospace,monospace; }
+    #loading,#error,#result { display:none; }
+    #loading.show,#error.show,#result.show { display:block; }
+    #loading { margin:64px 0; padding:32px; border:2px solid var(--acid); font:800 clamp(20px,4vw,44px) ui-monospace,monospace; text-transform:uppercase; }
+    #loading::after { content:""; display:inline-block; width:18px; height:30px; margin-left:10px; vertical-align:middle; background:var(--acid); animation:blink .5s steps(1) infinite; }
+    @keyframes blink { 50% { opacity:0; } }
+    #error { margin:45px 0; padding:20px; color:var(--black); background:var(--pink); font-weight:1000; text-transform:uppercase; }
+    #result { margin-top:76px; scroll-margin-top:20px; }
+    .card { position:relative; overflow:hidden; color:var(--black); background:var(--acid); border:3px solid var(--acid); box-shadow:16px 16px 0 var(--pink); }
+    .card.cooked { color:var(--paper); background:#d00031; border-color:#d00031; }
+    .card-head { display:grid; grid-template-columns:1fr auto; gap:20px; padding:32px; border-bottom:3px solid var(--black); }
+    .domain { font:900 12px ui-monospace,monospace; letter-spacing:.12em; text-transform:uppercase; }
+    .verdict { margin-top:5px; font-size:clamp(56px,11vw,140px); font-weight:1000; line-height:.75; letter-spacing:-.09em; }
+    .aura { text-align:right; font-size:clamp(32px,6vw,70px); font-weight:1000; line-height:.85; }
+    .aura small { display:block; font:900 9px ui-monospace,monospace; letter-spacing:.1em; }
+    .goal { padding:20px 32px; border-bottom:3px solid var(--black); font-size:clamp(18px,2.6vw,30px); font-weight:900; }
+    .stats { display:grid; grid-template-columns:repeat(5,1fr); background:var(--paper); border-bottom:3px solid var(--black); }
+    .stat { padding:22px 12px; text-align:center; border-right:2px solid var(--black); }
+    .stat:last-child { border:0; }
+    .stat b { display:block; font-size:clamp(22px,4vw,47px); line-height:1; letter-spacing:-.06em; }
+    .stat span { font:900 9px ui-monospace,monospace; text-transform:uppercase; }
+    .receipts { display:grid; grid-template-columns:1.2fr .8fr; gap:0; background:var(--paper); }
+    .evidence,.steps { padding:30px; }
+    .evidence { border-right:2px solid var(--black); }
+    .receipts h3 { margin:0 0 10px; font-size:12px; text-transform:uppercase; letter-spacing:.12em; }
+    .evidence p { margin:0 0 16px; font-size:20px; font-weight:800; }
+    .last { color:#d00064; font-weight:1000; text-transform:uppercase; }
+    .regression { display:none; margin-top:14px; padding:10px; color:var(--paper); background:#d00031; font:900 12px ui-monospace,monospace; text-transform:uppercase; }
+    .regression.show { display:block; }
+    .steps ol { max-height:170px; overflow:auto; margin:0; padding-left:22px; font:12px/1.5 ui-monospace,monospace; }
+    .sharebar { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+    .sharebar a,.sharebar button { padding:13px 16px; border:2px solid var(--paper); color:var(--paper); background:transparent; font-weight:1000; text-decoration:none; text-transform:uppercase; }
+    .sharebar a:hover,.sharebar button:hover { color:var(--black); background:var(--paper); }
+    .replay { border-color:var(--acid)!important; color:var(--acid)!important; }
+    #report { display:none; margin-top:76px; scroll-margin-top:20px; }
+    #report.show { display:block; }
+    .report-head { display:grid; grid-template-columns:1fr auto; gap:24px; align-items:end; padding:30px; color:var(--black); background:var(--pink); border:3px solid var(--pink); box-shadow:14px 14px 0 var(--acid); }
+    .report-head h2 { margin:4px 0 0; font-size:clamp(48px,9vw,112px); line-height:.78; letter-spacing:-.08em; text-transform:uppercase; }
+    .readiness-score { font-size:clamp(58px,10vw,128px); font-weight:1000; line-height:.72; letter-spacing:-.08em; text-align:right; }
+    .readiness-score small { display:block; margin-top:12px; font:900 9px ui-monospace,monospace; letter-spacing:.1em; }
+    .report-stats { display:grid; grid-template-columns:repeat(4,1fr); margin-top:24px; border:2px solid var(--paper); }
+    .report-stats .stat { border-color:var(--paper); }
+    .report-grid { display:grid; grid-template-columns:1fr 1fr; border:2px solid var(--paper); border-top:0; }
+    .report-panel { min-height:180px; padding:25px; border-right:2px solid var(--paper); }
+    .report-panel:last-child { border:0; }
+    .report-panel h3 { margin:0 0 15px; color:var(--acid); font:900 12px ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; }
+    .report-panel ul { margin:0; padding-left:20px; }
+    .report-panel li { margin:9px 0; }
+    .runrow { display:grid; grid-template-columns:90px 1fr auto; gap:12px; padding:13px 4px; color:inherit; border-top:1px solid #343430; text-decoration:none; font:12px ui-monospace,monospace; }
+    .runrow b { color:var(--acid); }
+    .leaderboard { margin-top:90px; }
+    .leaderboard h2 { margin:0 0 18px; font-size:clamp(36px,7vw,80px); letter-spacing:-.07em; text-transform:uppercase; }
+    .boardrow { display:grid; grid-template-columns:45px 1fr auto auto; gap:14px; padding:14px 6px; border-top:1px solid #343430; font-family:ui-monospace,monospace; }
+    .boardrow b { color:var(--acid); }
+    footer { padding:25px; border-top:1px solid #343430; color:#696962; text-align:center; font:10px ui-monospace,monospace; text-transform:uppercase; }
+    @media (max-width:800px) {
+      .hero { grid-template-columns:1fr; min-height:0; }
+      .manifesto { grid-template-columns:1fr 1fr; }
+      .packgrid { grid-template-columns:1fr; }
+      .fact:nth-child(2) { border-right:0; }
+      .fact:nth-child(-n+2) { border-bottom:1px solid #343430; }
+      .stats { grid-template-columns:1fr 1fr; }
+      .stat { border-bottom:2px solid var(--black); }
+      .receipts { grid-template-columns:1fr; }
+      .evidence { border-right:0; border-bottom:2px solid var(--black); }
+      .card-head { padding:24px; }
+      .goal { padding:18px 24px; }
+      .boardrow { grid-template-columns:30px 1fr auto; }
+      .boardrow span:last-child { display:none; }
+      .report-head { grid-template-columns:1fr; }
+      .readiness-score { text-align:left; }
+      .report-stats { grid-template-columns:1fr 1fr; }
+      .report-grid { grid-template-columns:1fr; }
+      .report-panel { border-right:0; border-bottom:2px solid var(--paper); }
+      .runrow { grid-template-columns:75px 1fr; }
+      .runrow span:last-child { display:none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="noise"></div>
+  <div class="ticker"><span>real browser&nbsp;&nbsp;✦&nbsp;&nbsp;real replay&nbsp;&nbsp;✦&nbsp;&nbsp;catastrophic aura loss&nbsp;&nbsp;✦&nbsp;&nbsp;captcha boss fights&nbsp;&nbsp;✦&nbsp;&nbsp;no benchmark nerds allowed&nbsp;&nbsp;✦&nbsp;&nbsp;</span></div>
+  <header><div class="logo">CLANKER <i>ANY%</i></div><div class="live">● SOLARI RUNNER ONLINE</div></header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <div class="kicker">Speedrun the entire internet</div>
+        <h1>Make AI<br><span>lock in.</span></h1>
+        <p class="dek">Give the clanker a website and one mission. It gets <b>12 moves</b>, a real Solari browser, and absolutely no dignity. Watch the tape. Farm aura. Expose sites that are unusable by the next billion users: robots.</p>
+        <div class="examples">
+          <button data-url="https://www.ikea.com/us/en/" data-goal="Find the cheapest red chair and reach its product page.">IKEA chair any%</button>
+          <button data-url="https://en.wikipedia.org/" data-goal="Find the first documented use of the word brainrot and reach the source.">brainrot lore%</button>
+          <button data-url="https://news.ycombinator.com/" data-goal="Find today's most upvoted post about AI and open its discussion.">HN slop%</button>
+        </div>
+      </div>
+
+      <form class="form" id="challenge">
+        <h2>Spawn a clanker</h2>
+        <label>Map URL<input id="url" type="url" value="https://en.wikipedia.org/" required></label>
+        <label>Mission<textarea id="goal" maxlength="220" required>Find the first documented use of the word brainrot and reach the source.</textarea></label>
+        <button class="submit" id="submit" type="submit">Start the run →</button>
+        <button class="demo" id="demo" type="button">see rigged demo (free)</button>
+      </form>
+    </section>
+
+    <section class="manifesto">
+      <div class="fact"><strong>12</strong><small>moves before cooked</small></div>
+      <div class="fact"><strong>1</strong><small>recorded real browser</small></div>
+      <div class="fact"><strong>0</strong><small>logins / purchases / crimes</small></div>
+      <div class="fact"><strong>∞</strong><small>potential aura loss</small></div>
+    </section>
+
+    <section class="protocols">
+      <h2>Standard maps</h2>
+      <p>Same missions, every deployment. Run them on a schedule to catch when a site that used to lock in suddenly gets cooked.</p>
+      <div class="packgrid" id="packs"></div>
+    </section>
+
+    <div id="loading"><span id="loadingText">clanker entering the map</span></div>
+    <div id="error" role="alert"></div>
+
+    <section id="result" aria-live="polite">
+      <article class="card" id="card">
+        <div class="card-head">
+          <div><div class="domain" id="domain"></div><div class="verdict" id="verdict"></div></div>
+          <div class="aura" id="aura"></div>
+        </div>
+        <div class="goal" id="resultGoal"></div>
+        <div class="stats">
+          <div class="stat"><b id="time"></b><span>time</span></div>
+          <div class="stat"><b id="actions"></b><span>moves</span></div>
+          <div class="stat"><b id="redirects"></b><span>wrong turns</span></div>
+          <div class="stat"><b id="bosses"></b><span>boss fights</span></div>
+          <div class="stat"><b id="confidence"></b><span>mod verdict</span></div>
+        </div>
+        <div class="receipts">
+          <div class="evidence"><h3>Receipts</h3><p id="evidence"></p><div class="last" id="lastWords"></div><div class="regression" id="regression"></div></div>
+          <div class="steps"><h3>Split times (spiritually)</h3><ol id="steps"></ol></div>
+        </div>
+      </article>
+      <div class="sharebar">
+        <button id="copy">copy propaganda</button>
+        <a id="shareX" target="_blank" rel="noreferrer">post the allegations on X</a>
+        <a class="replay" id="replay" target="_blank" rel="noreferrer">watch the tape ↗</a>
+        <a id="readiness">agent readiness report ↗</a>
+      </div>
+    </section>
+
+    <section id="report" aria-live="polite">
+      <div class="report-head">
+        <div><div class="domain" id="reportDomain"></div><h2 id="readinessLabel"></h2></div>
+        <div class="readiness-score" id="readinessScore"></div>
+      </div>
+      <div class="report-stats">
+        <div class="stat"><b id="reportRuns"></b><span>recorded runs</span></div>
+        <div class="stat"><b id="reportMissions"></b><span>unique missions</span></div>
+        <div class="stat"><b id="reportTime"></b><span>median success</span></div>
+        <div class="stat"><b id="reportTrend"></b><span>success trend</span></div>
+      </div>
+      <div class="report-grid">
+        <div class="report-panel"><h3>Where agents eat shit</h3><ul id="failureCategories"></ul></div>
+        <div class="report-panel"><h3>Missions that stay cooked</h3><ul id="failedMissions"></ul></div>
+      </div>
+      <div class="report-grid">
+        <div class="report-panel"><h3>Model × browser leaderboard</h3><ul id="variants"></ul></div>
+        <div class="report-panel"><h3>Regression sirens</h3><ul id="regressions"></ul></div>
+      </div>
+      <div class="leaderboard"><h2>Replayable evidence</h2><div id="reportRunsList"></div></div>
+    </section>
+
+    <section class="leaderboard"><h2>Global sweatshop</h2><div id="board"><div class="boardrow"><span>#</span><span>No public runs yet. Be the problem.</span><span>—</span><span>—</span></div></div></section>
+  </main>
+
+  <footer>Powered by Solari browsers · page content is hostile evidence · do not try crimes, checkout, or LinkedIn applications</footer>
+
+  <script>
+    const $ = (selector) => document.querySelector(selector)
+    const messages = ['clanker entering the map','reading buttons like ancient runes','losing aura in real time','fighting the cookie banner miniboss','mods reviewing the tape','asking the GPU for emotional support']
+    let messageTimer
+    let currentResult
+    const esc = (value) => String(value).replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[char])
+    const formatTime = (ms) => `${(ms / 1000).toFixed(2)}s`
+
+    function startLoading() {
+      let index = 0
+      $('#loadingText').textContent = messages[0]
+      messageTimer = setInterval(() => { index = (index + 1) % messages.length; $('#loadingText').textContent = messages[index] }, 2200)
+      $('#loading').classList.add('show')
+      $('#error').classList.remove('show')
+      $('#result').classList.remove('show')
+      $('#submit').disabled = true
+    }
+    function stopLoading() { clearInterval(messageTimer); $('#loading').classList.remove('show'); $('#submit').disabled = false }
+
+    function render(run) {
+      currentResult = run
+      $('#card').classList.toggle('cooked', !run.passed)
+      $('#domain').textContent = `${run.host} · RUN ${run.id.toUpperCase()}`
+      $('#verdict').textContent = run.status
+      $('#aura').innerHTML = `${run.aura > 0 ? '+' : ''}${run.aura}<small>aura</small>`
+      $('#resultGoal').textContent = run.goal
+      $('#time').textContent = formatTime(run.timeMs)
+      $('#actions').textContent = run.actions
+      $('#redirects').textContent = run.redirects
+      $('#bosses').textContent = run.bossFights
+      $('#confidence').textContent = `${run.confidence}%`
+      $('#evidence').textContent = run.evidence
+      $('#lastWords').textContent = run.lastWords
+      $('#regression').classList.toggle('show', Boolean(run.regression))
+      $('#regression').textContent = run.regression ? `🚨 ${run.regression.message}` : ''
+      $('#steps').innerHTML = run.steps.map((step) => `<li>${esc(step.action)} — ${esc(step.reason)}</li>`).join('') || '<li>died at spawn</li>'
+      $('#url').value = run.url
+      $('#goal').value = run.goal
+      $('#submit').textContent = 'try to beat this run →'
+      const permalink = `${location.origin}/r/${run.id}`
+      const propaganda = `I made a clanker speedrun ${run.host}: “${run.goal}”\n\n${run.status} in ${formatTime(run.timeMs)} · ${run.aura > 0 ? '+' : ''}${run.aura} aura\n\nBeat my run: ${permalink}`
+      $('#shareX').href = `https://x.com/intent/post?text=${encodeURIComponent(propaganda)}`
+      $('#replay').style.display = run.replayUrl ? '' : 'none'
+      if (run.replayUrl) $('#replay').href = run.replayUrl
+      $('#readiness').href = `/d/${encodeURIComponent(run.host)}`
+      $('#result').classList.add('show')
+      $('#result').scrollIntoView({behavior:'smooth',block:'start'})
+    }
+
+    function renderReport(report) {
+      $('#reportDomain').textContent = report.isPreview
+        ? `${report.host} · PREVIEW REPORT · DEMO DATA`
+        : `${report.host} · PUBLIC AGENT READINESS REPORT`
+      $('#readinessLabel').textContent = report.readinessLabel
+      $('#readinessScore').innerHTML = `${report.completionRate}%<small>${report.isPreview ? 'DEMO DATA — NOT A PUBLISHED SCORE' : `${report.passedRuns}/${report.totalRuns} MISSIONS COMPLETED`}</small>`
+      $('#reportRuns').textContent = report.totalRuns
+      $('#reportMissions').textContent = report.uniqueMissions
+      $('#reportTime').textContent = report.medianTimeMs === null ? '—' : formatTime(report.medianTimeMs)
+      $('#reportTrend').textContent = report.trendPoints === null ? 'NEED 4' : `${report.trendPoints > 0 ? '+' : ''}${report.trendPoints}pt`
+      $('#failureCategories').innerHTML = report.failureCategories.length
+        ? report.failureCategories.map((item) => `<li><b>${esc(item.category.replace('_',' '))}</b> — ${item.count} run${item.count === 1 ? '' : 's'}</li>`).join('')
+        : '<li>No recorded failures. Suspiciously locked in.</li>'
+      $('#failedMissions').innerHTML = report.failedMissions.length
+        ? report.failedMissions.map((item) => `<li>${esc(item.goal)} <b>×${item.count}</b></li>`).join('')
+        : '<li>Nothing stays cooked yet.</li>'
+      $('#variants').innerHTML = report.variants.map((variant) => `<li><b>${esc(variant.model)}</b> + ${esc(variant.browserMode)} — ${variant.completionRate}% / ${variant.medianTimeMs === null ? '—' : formatTime(variant.medianTimeMs)} (${variant.totalRuns}, ${esc(variant.packId)})</li>`).join('') || '<li>No comparable variants yet.</li>'
+      $('#regressions').innerHTML = report.regressions.length
+        ? report.regressions.map((item) => `<li><a href="/r/${item.runId}" style="color:inherit"><b>${esc(item.alert.kind)}</b> — ${esc(item.goal)}: ${esc(item.alert.message)}</a></li>`).join('')
+        : '<li>No sirens. The site has not gotten measurably worse.</li>'
+      $('#reportRunsList').innerHTML = report.runs.length
+        ? report.runs.map((run) => `<a class="runrow" href="/r/${run.id}"><b>${esc(run.status)}</b><span>${esc(run.goal)}</span><span>${formatTime(run.timeMs)} · ${run.aura > 0 ? '+' : ''}${run.aura} aura</span></a>`).join('')
+        : '<div class="boardrow"><span>—</span><span>No runs. This report is spiritually unemployed.</span><span>—</span><span>—</span></div>'
+      $('#report').classList.add('show')
+      $('#report').scrollIntoView({behavior:'smooth',block:'start'})
+    }
+
+    async function loadReport(host) {
+      try {
+        const response = await fetch(`/api/domains/${encodeURIComponent(host)}`)
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'report got cooked')
+        renderReport(data)
+      } catch (error) {
+        $('#error').textContent = error.message
+        $('#error').classList.add('show')
+      }
+    }
+
+    async function request(url, options) {
+      startLoading()
+      try {
+        const response = await fetch(url, options)
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'unrecoverable skill issue')
+        render(data)
+      } catch (error) {
+        $('#error').textContent = error.message
+        $('#error').classList.add('show')
+      } finally { stopLoading() }
+    }
+
+    $('#challenge').addEventListener('submit', (event) => {
+      event.preventDefault()
+      request('/api/runs', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url:$('#url').value,goal:$('#goal').value})})
+    })
+    $('#demo').addEventListener('click', () => request('/api/demo'))
+    $('.examples').addEventListener('click', (event) => {
+      const button = event.target.closest('button')
+      if (!button) return
+      $('#url').value = button.dataset.url
+      $('#goal').value = button.dataset.goal
+      $('.form').scrollIntoView({behavior:'smooth',block:'center'})
+    })
+    $('#copy').addEventListener('click', async () => {
+      if (!currentResult) return
+      const link = `${location.origin}/r/${currentResult.id}`
+      await navigator.clipboard.writeText(`${currentResult.status}: ${currentResult.goal} — ${formatTime(currentResult.timeMs)}, ${currentResult.aura} aura. Beat my run: ${link}`)
+      $('#copy').textContent = 'propaganda copied ✓'
+    })
+
+    async function loadBoard() {
+      const runs = await fetch('/api/leaderboard').then((response) => response.json()).catch(() => [])
+      if (!runs.length) return
+      $('#board').innerHTML = runs.map((run,index) => `<a class="boardrow" href="/r/${run.id}" style="color:inherit;text-decoration:none"><b>${index+1}</b><span>${esc(run.host)} — ${esc(run.goal)}</span><span>${formatTime(run.timeMs)}</span><span>${run.aura > 0 ? '+' : ''}${run.aura} aura</span></a>`).join('')
+    }
+    async function loadPacks() {
+      const packs = await fetch('/api/packs').then((response) => response.json()).catch(() => [])
+      $('#packs').innerHTML = packs.map((pack) => `<article class="pack"><b>${esc(pack.name)}</b><p>${esc(pack.description)}</p><ol>${pack.missions.map((mission) => `<li>${esc(mission)}</li>`).join('')}</ol></article>`).join('')
+    }
+    const match = location.pathname.match(/^\/r\/([a-f0-9]{8})$/)
+    if (match) request(`/api/runs/${match[1]}`)
+    const domainMatch = location.pathname.match(/^\/d\/(.+)$/)
+    if (domainMatch) loadReport(decodeURIComponent(domainMatch[1]))
+    loadPacks()
+    loadBoard()
+  </script>
+</body>
+</html>

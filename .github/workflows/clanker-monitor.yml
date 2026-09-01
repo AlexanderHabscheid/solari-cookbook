@@ -1,0 +1,52 @@
+name: CLANKER agent readiness
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Public site to monitor
+        required: true
+        type: string
+      pack:
+        description: Mission pack id
+        required: true
+        default: commerce-core
+        type: string
+  schedule:
+    - cron: "17 14 * * 1"
+
+jobs:
+  monitor:
+    if: github.event_name == 'workflow_dispatch' || vars.CLANKER_MONITOR_URL != ''
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/clanker-any-percent
+    env:
+      SOLARI_API_KEY: ${{ secrets.SOLARI_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      CLANKER_MONITOR_URL: ${{ inputs.url || vars.CLANKER_MONITOR_URL }}
+      CLANKER_MONITOR_PACK: ${{ inputs.pack || vars.CLANKER_MONITOR_PACK || 'commerce-core' }}
+      OPENAI_MODEL: gpt-5.4-mini
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/cache@v4
+        with:
+          path: examples/clanker-any-percent/data/runs.jsonl
+          key: clanker-history-${{ github.run_id }}
+          restore-keys: clanker-history-
+      - run: npm install
+      - name: Run standardized mission pack
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run monitor -- "$CLANKER_MONITOR_URL" "$CLANKER_MONITOR_PACK" | tee monitor-result.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clanker-monitor-result
+          path: examples/clanker-any-percent/monitor-result.json
+          if-no-files-found: ignore

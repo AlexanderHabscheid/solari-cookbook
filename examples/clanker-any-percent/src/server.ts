@@ -4,12 +4,20 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { buildDomainReport, demoResult, detectRegression, validateChallenge } from "./core.js"
 import { missionPacks } from "./mission-packs.js"
 import { runChallenge } from "./runner.js"
-import { allRuns, getRun, leaderboard, loadRuns, runsForHost, saveRun } from "./store.js"
+import { allRuns, dailyRunCount, getRun, leaderboard, loadRuns, runsForHost, saveRun } from "./store.js"
 import type { DomainReport, RunResult } from "./types.js"
 
 const page = await readFile(new URL("../public/index.html", import.meta.url), "utf8")
 const port = Number(process.env.PORT ?? 3000)
 let running = false
+
+const liveRunsEnabled = process.env.CLANKER_LIVE_RUNS === "true"
+  && Boolean(process.env.SOLARI_API_KEY)
+  && Boolean(process.env.OPENAI_API_KEY)
+const configuredDailyRunLimit = Number(process.env.CLANKER_DAILY_RUN_LIMIT ?? 6)
+const dailyRunLimit = Number.isFinite(configuredDailyRunLimit)
+  ? Math.max(1, Math.min(100, Math.floor(configuredDailyRunLimit)))
+  : 6
 
 await loadRuns()
 
@@ -108,6 +116,10 @@ const server = createServer(async (request, response) => {
     json(response, 200, missionPacks)
     return
   }
+  if (request.method === "GET" && path === "/api/config") {
+    json(response, 200, { liveRunsEnabled, dailyRunLimit })
+    return
+  }
   if (request.method === "GET" && path.startsWith("/api/domains/")) {
     const host = path.slice("/api/domains/".length).toLowerCase()
     if (!/^(?:[a-z0-9-]+\.)+[a-z0-9-]+$/.test(host)) {
@@ -131,9 +143,17 @@ const server = createServer(async (request, response) => {
     json(response, 429, { error: "One clanker is already fighting for its life. Queue diff." })
     return
   }
+  if (!liveRunsEnabled) {
+    json(response, 503, { error: "Live runs are locked while the deployment keys rotate. The free replay lab still works." })
+    return
+  }
 
   running = true
   try {
+    if (await dailyRunCount() >= dailyRunLimit) {
+      json(response, 429, { error: "Today's public credit budget got cooked. Replays and reports are still free." })
+      return
+    }
     const challenge = await validateChallenge(await readJson(request))
     const result = await runChallenge(challenge)
     result.regression = detectRegression(result, allRuns())

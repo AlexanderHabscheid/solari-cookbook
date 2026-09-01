@@ -136,7 +136,7 @@
 <body>
   <div class="noise"></div>
   <div class="ticker"><span>real browser&nbsp;&nbsp;✦&nbsp;&nbsp;real replay&nbsp;&nbsp;✦&nbsp;&nbsp;catastrophic aura loss&nbsp;&nbsp;✦&nbsp;&nbsp;captcha boss fights&nbsp;&nbsp;✦&nbsp;&nbsp;no benchmark nerds allowed&nbsp;&nbsp;✦&nbsp;&nbsp;</span></div>
-  <header><div class="logo">CLANKER <i>ANY%</i></div><div class="live">● SOLARI RUNNER ONLINE</div></header>
+  <header><div class="logo">CLANKER <i>ANY%</i></div><div class="live" id="runtimeStatus">● REPLAY LAB ONLINE</div></header>
 
   <main>
     <section class="hero">
@@ -235,6 +235,7 @@
     const messages = ['clanker entering the map','reading buttons like ancient runes','losing aura in real time','fighting the cookie banner miniboss','mods reviewing the tape','asking the GPU for emotional support']
     let messageTimer
     let currentResult
+    let liveRunsEnabled = false
     const esc = (value) => String(value).replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[char])
     const formatTime = (ms) => `${(ms / 1000).toFixed(2)}s`
 
@@ -247,7 +248,7 @@
       $('#result').classList.remove('show')
       $('#submit').disabled = true
     }
-    function stopLoading() { clearInterval(messageTimer); $('#loading').classList.remove('show'); $('#submit').disabled = false }
+    function stopLoading() { clearInterval(messageTimer); $('#loading').classList.remove('show'); $('#submit').disabled = !liveRunsEnabled }
 
     function render(run) {
       currentResult = run
@@ -359,12 +360,20 @@
       const packs = await fetch('/api/packs').then((response) => response.json()).catch(() => [])
       $('#packs').innerHTML = packs.map((pack) => `<article class="pack"><b>${esc(pack.name)}</b><p>${esc(pack.description)}</p><ol>${pack.missions.map((mission) => `<li>${esc(mission)}</li>`).join('')}</ol></article>`).join('')
     }
+    async function loadConfig() {
+      const config = await fetch('/api/config').then((response) => response.json()).catch(() => ({liveRunsEnabled:false}))
+      liveRunsEnabled = config.liveRunsEnabled
+      $('#runtimeStatus').textContent = liveRunsEnabled ? '● SOLARI RUNNER ONLINE' : '● REPLAY LAB ONLINE'
+      $('#submit').disabled = !liveRunsEnabled
+      $('#submit').textContent = liveRunsEnabled ? 'start the run →' : 'live runs unlock after key rotation'
+    }
     const match = location.pathname.match(/^\/r\/([a-f0-9]{8})$/)
     if (match) request(`/api/runs/${match[1]}`)
     const domainMatch = location.pathname.match(/^\/d\/(.+)$/)
     if (domainMatch) loadReport(decodeURIComponent(domainMatch[1]))
     loadPacks()
     loadBoard()
+    loadConfig()
   </script>
 </body>
 </html>

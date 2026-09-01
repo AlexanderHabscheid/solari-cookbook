@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@solarisdk/browser": "^0.1.1",
+    "@vercel/blob": "^2.8.0",
     "openai": "^7.8.0"
   },
   "devDependencies": {

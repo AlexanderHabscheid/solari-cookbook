@@ -1,1 +1,3 @@
 data/*.jsonl
+.vercel
+.env.local

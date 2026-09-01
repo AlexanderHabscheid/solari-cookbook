@@ -1,5 +1,7 @@
 # CLANKER ANY%
 
+Live app: <https://clanker-any-percent.vercel.app>
+
 Turn any safe, public website task into a browser-agent speedrun.
 
 Paste a URL and a mission. A recorded Solari browser gets 12 moves to
@@ -28,6 +30,11 @@ Open <http://localhost:3000>. `See rigged demo` works without keys. Set
 Paid plans can opt into managed stealth and CAPTCHA solving with
 `SOLARI_STEALTH=true` and `SOLARI_CAPTCHA=true`; both default off so the app
 works on the free plan. CAPTCHA encounters are still detected and scored.
+
+Public deployments require `CLANKER_LIVE_RUNS=true` in addition to both API
+keys. `CLANKER_DAILY_RUN_LIMIT` defaults to six completed runs per UTC day so a
+viral post cannot turn into an unbounded credit bill. On Vercel, run evidence is
+stored in a connected private Blob store; local development keeps using JSONL.
 
 ## Synthetic monitoring
 

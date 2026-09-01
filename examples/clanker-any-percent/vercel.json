@@ -2,6 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "src/server.ts": {
+      "includeFiles": "node_modules/patchright-core/browsers.json",
       "maxDuration": 300
     }
   }

@@ -18,8 +18,6 @@ const dailyRunLimit = Number.isFinite(configuredDailyRunLimit)
   ? Math.max(1, Math.min(100, Math.floor(configuredDailyRunLimit)))
   : 6
 
-await loadRuns()
-
 function json(response: ServerResponse, status: number, value: unknown): void {
   response.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
@@ -85,6 +83,7 @@ async function readJson(request: IncomingMessage): Promise<unknown> {
 
 const server = createServer(async (request, response) => {
   const path = new URL(request.url ?? "/", "http://local").pathname
+  if (/^\/(?:r|d|api\/(?:leaderboard|domains|runs))(?:\/|$)/.test(path)) await loadRuns()
   if (request.method === "GET" && path === "/") {
     html(response)
     return

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Make an AI clanker speedrun any website. Watch the replay. Farm aura.">
+  <meta name="description" content="Prove whether AI customers can complete a real journey on your website—with a recorded browser and deterministic receipts.">
   <!-- SHARE_META -->
   <title>CLANKER ANY%</title>
   <style>
@@ -14,7 +14,7 @@
     button,input,textarea { font:inherit; }
     button { cursor:pointer; }
     .noise { position:fixed; inset:0; pointer-events:none; opacity:.05; z-index:9; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-    .ticker { overflow:hidden; padding:8px 0; color:var(--black); background:var(--acid); font-weight:1000; text-transform:uppercase; white-space:nowrap; transform:rotate(-1deg) scale(1.01); }
+    .ticker { overflow:hidden; padding:8px 0; color:var(--black); background:var(--acid); font-weight:1000; text-transform:uppercase; white-space:nowrap; }
     .ticker span { display:inline-block; padding-left:100%; animation:ticker 24s linear infinite; }
     @keyframes ticker { to { transform:translateX(-100%); } }
     header { display:flex; justify-content:space-between; align-items:center; max-width:1180px; margin:auto; padding:22px 24px; }
@@ -39,6 +39,9 @@
     .submit:hover { color:var(--black); background:var(--acid); }
     .submit:disabled { opacity:.55; cursor:wait; }
     .demo { width:100%; margin-top:8px; padding:10px; border:0; background:transparent; text-decoration:underline; font-weight:900; }
+    .proof { min-width:0; margin-top:14px; padding:12px; border:2px dashed var(--black); background:#e7e4d8; }
+    .proof legend { padding:0 6px; font:1000 10px ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; }
+    .proof p { margin:4px 0 0; color:#4e4e49; font:10px/1.35 ui-monospace,monospace; }
     .examples { display:flex; flex-wrap:wrap; gap:8px; margin-top:22px; }
     .examples button { padding:7px 10px; border:1px solid #4a4a46; color:#aaa; background:transparent; font:11px ui-monospace,monospace; }
     .examples button:hover { color:var(--acid); border-color:var(--acid); }
@@ -97,7 +100,7 @@
     .report-stats { display:grid; grid-template-columns:repeat(4,1fr); margin-top:24px; border:2px solid var(--paper); }
     .report-stats .stat { border-color:var(--paper); }
     .report-grid { display:grid; grid-template-columns:1fr 1fr; border:2px solid var(--paper); border-top:0; }
-    .report-panel { min-height:180px; padding:25px; border-right:2px solid var(--paper); }
+    .report-panel { min-width:0; min-height:180px; padding:25px; border-right:2px solid var(--paper); overflow-wrap:anywhere; }
     .report-panel:last-child { border:0; }
     .report-panel h3 { margin:0 0 15px; color:var(--acid); font:900 12px ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; }
     .report-panel ul { margin:0; padding-left:20px; }
@@ -135,26 +138,32 @@
 </head>
 <body>
   <div class="noise"></div>
-  <div class="ticker"><span>real browser&nbsp;&nbsp;✦&nbsp;&nbsp;real replay&nbsp;&nbsp;✦&nbsp;&nbsp;catastrophic aura loss&nbsp;&nbsp;✦&nbsp;&nbsp;captcha boss fights&nbsp;&nbsp;✦&nbsp;&nbsp;no benchmark nerds allowed&nbsp;&nbsp;✦&nbsp;&nbsp;</span></div>
+  <div class="ticker"><span>real browser&nbsp;&nbsp;✦&nbsp;&nbsp;predeclared win condition&nbsp;&nbsp;✦&nbsp;&nbsp;deterministic receipts&nbsp;&nbsp;✦&nbsp;&nbsp;catastrophic aura loss&nbsp;&nbsp;✦&nbsp;&nbsp;captcha boss fights&nbsp;&nbsp;✦&nbsp;&nbsp;</span></div>
   <header><div class="logo">CLANKER <i>ANY%</i></div><div class="live" id="runtimeStatus">● REPLAY LAB ONLINE</div></header>
 
   <main>
     <section class="hero">
       <div>
-        <div class="kicker">Speedrun the entire internet</div>
-        <h1>Make AI<br><span>lock in.</span></h1>
-        <p class="dek">Give the clanker a website and one mission. It gets <b>12 moves</b>, a real Solari browser, and absolutely no dignity. Watch the tape. Farm aura. Expose sites that are unusable by the next billion users: robots.</p>
+        <div class="kicker">Customer-journey testing for AI users</div>
+        <h1>Can AI<br><span>buy you?</span></h1>
+        <p class="dek">Your landing page looks great. Can a clanker figure out how to become your customer? Declare the win condition <b>before</b> the run, then get a deterministic receipt and a real Solari replay—not an AI grading its own homework.</p>
         <div class="examples">
-          <button data-url="https://www.ikea.com/us/en/" data-goal="Find the cheapest red chair and reach its product page.">IKEA chair any%</button>
-          <button data-url="https://en.wikipedia.org/" data-goal="Find the first documented use of the word brainrot and reach the source.">brainrot lore%</button>
-          <button data-url="https://news.ycombinator.com/" data-goal="Find today's most upvoted post about AI and open its discussion.">HN slop%</button>
+          <button data-url="https://github.com/" data-goal="Reach GitHub's pricing page." data-text="" data-path="/pricing">pricing boss fight%</button>
+          <button data-url="https://en.wikipedia.org/" data-goal="Open Wikipedia's Brain rot article." data-text="Brain rot" data-path="/wiki/Brain_rot">brainrot lore%</button>
+          <button data-url="https://news.ycombinator.com/" data-goal="Open Hacker News's new submissions page." data-text="" data-path="/newest">fresh slop%</button>
         </div>
       </div>
 
       <form class="form" id="challenge">
         <h2>Spawn a clanker</h2>
         <label>Map URL<input id="url" type="url" value="https://en.wikipedia.org/" required></label>
-        <label>Mission<textarea id="goal" maxlength="220" required>Find the first documented use of the word brainrot and reach the source.</textarea></label>
+        <label>Mission<textarea id="goal" maxlength="220" required>Open Wikipedia's Brain rot article.</textarea></label>
+        <fieldset class="proof">
+          <legend>Predeclare the receipt</legend>
+          <label>Final page visibly contains<input id="successText" maxlength="160" value="brain rot" placeholder="e.g. $49/month"></label>
+          <label>Final URL path/query contains<input id="successUrl" maxlength="160" value="/wiki/Brain_rot" placeholder="e.g. /pricing"></label>
+          <p>Both supplied checks must pass. Text ignores case and whitespace; URL path/query is case-sensitive. A match proves only these conditions—not purchase completion or site-wide readiness.</p>
+        </fieldset>
         <button class="submit" id="submit" type="submit">Start the run →</button>
         <button class="demo" id="demo" type="button">see rigged demo (free)</button>
       </form>
@@ -163,8 +172,8 @@
     <section class="manifesto">
       <div class="fact"><strong>12</strong><small>moves before cooked</small></div>
       <div class="fact"><strong>1</strong><small>recorded real browser</small></div>
+      <div class="fact"><strong>0</strong><small>extra judge calls for checks</small></div>
       <div class="fact"><strong>0</strong><small>logins / purchases / crimes</small></div>
-      <div class="fact"><strong>∞</strong><small>potential aura loss</small></div>
     </section>
 
     <section class="protocols">
@@ -188,7 +197,7 @@
           <div class="stat"><b id="actions"></b><span>moves</span></div>
           <div class="stat"><b id="redirects"></b><span>wrong turns</span></div>
           <div class="stat"><b id="bosses"></b><span>boss fights</span></div>
-          <div class="stat"><b id="confidence"></b><span>mod verdict</span></div>
+          <div class="stat"><b id="confidence"></b><span id="verdictLabel">mod verdict</span></div>
         </div>
         <div class="receipts">
           <div class="evidence"><h3>Receipts</h3><p id="evidence"></p><div class="last" id="lastWords"></div><div class="regression" id="regression"></div></div>
@@ -210,7 +219,7 @@
       </div>
       <div class="report-stats">
         <div class="stat"><b id="reportRuns"></b><span>recorded runs</span></div>
-        <div class="stat"><b id="reportMissions"></b><span>unique missions</span></div>
+        <div class="stat"><b id="reportMissions"></b><span>verified receipts</span></div>
         <div class="stat"><b id="reportTime"></b><span>median success</span></div>
         <div class="stat"><b id="reportTrend"></b><span>success trend</span></div>
       </div>
@@ -219,8 +228,12 @@
         <div class="report-panel"><h3>Missions that stay cooked</h3><ul id="failedMissions"></ul></div>
       </div>
       <div class="report-grid">
-        <div class="report-panel"><h3>Model × browser leaderboard</h3><ul id="variants"></ul></div>
+        <div class="report-panel"><h3>Mission × model × browser results</h3><ul id="variants"></ul></div>
         <div class="report-panel"><h3>Regression sirens</h3><ul id="regressions"></ul></div>
+      </div>
+      <div class="report-grid">
+        <div class="report-panel"><h3>Declared customer journeys</h3><ul id="journeys"></ul></div>
+        <div class="report-panel"><h3>Evidence boundary</h3><p id="evidenceBoundary"></p></div>
       </div>
       <div class="leaderboard"><h2>Replayable evidence</h2><div id="reportRunsList"></div></div>
     </section>
@@ -261,17 +274,22 @@
       $('#actions').textContent = run.actions
       $('#redirects').textContent = run.redirects
       $('#bosses').textContent = run.bossFights
-      $('#confidence').textContent = `${run.confidence}%`
-      $('#evidence').textContent = run.evidence
+      const deterministic = run.verification?.method === 'deterministic'
+      $('#confidence').textContent = deterministic ? `${run.verification.checks.filter(check => check.passed).length}/${run.verification.checks.length}` : `${run.confidence ?? '—'}%`
+      $('#verdictLabel').textContent = deterministic ? 'conditions matched' : 'AI judge'
+      $('#evidence').textContent = run.evidence + (run.verification?.observedUrl ? ` · Observed URL: ${run.verification.observedUrl}` : '')
       $('#lastWords').textContent = run.lastWords
       $('#regression').classList.toggle('show', Boolean(run.regression))
       $('#regression').textContent = run.regression ? `🚨 ${run.regression.message}` : ''
       $('#steps').innerHTML = run.steps.map((step) => `<li>${esc(step.action)} — ${esc(step.reason)}</li>`).join('') || '<li>died at spawn</li>'
       $('#url').value = run.url
       $('#goal').value = run.goal
+      $('#successText').value = run.success?.visibleText || ''
+      $('#successUrl').value = run.success?.urlContains || ''
       $('#submit').textContent = 'try to beat this run →'
       const permalink = `${location.origin}/r/${run.id}`
-      const propaganda = `I made a clanker speedrun ${run.host}: “${run.goal}”\n\n${run.status} in ${formatTime(run.timeMs)} · ${run.aura > 0 ? '+' : ''}${run.aura} aura\n\nBeat my run: ${permalink}`
+      const receipt = run.verification?.method === 'deterministic' ? 'PREDECLARED CHECKS' : 'AI-JUDGED'
+      const propaganda = `I made a clanker speedrun ${run.host}: “${run.goal}”\n\n${run.status} in ${formatTime(run.timeMs)} · ${receipt} · ${run.aura > 0 ? '+' : ''}${run.aura} aura\n\nBeat my run: ${permalink}`
       $('#shareX').href = `https://x.com/intent/post?text=${encodeURIComponent(propaganda)}`
       $('#replay').style.display = run.replayUrl ? '' : 'none'
       if (run.replayUrl) $('#replay').href = run.replayUrl
@@ -283,23 +301,31 @@
     function renderReport(report) {
       $('#reportDomain').textContent = report.isPreview
         ? `${report.host} · PREVIEW REPORT · DEMO DATA`
-        : `${report.host} · PUBLIC AGENT READINESS REPORT`
+        : `${report.host} · PUBLIC JOURNEY CHECKS · NOT SITE-WIDE CERTIFICATION`
       $('#readinessLabel').textContent = report.readinessLabel
-      $('#readinessScore').innerHTML = `${report.completionRate}%<small>${report.isPreview ? 'DEMO DATA — NOT A PUBLISHED SCORE' : `${report.passedRuns}/${report.totalRuns} MISSIONS COMPLETED`}</small>`
+      const basis = report.scoreBasis === 'deterministic' ? 'PREDECLARED RECEIPTS' : 'AI-JUDGED — NOT OBJECTIVE'
+      $('#readinessScore').innerHTML = `${report.completionRate}%<small>${report.isPreview ? 'DEMO DATA — NOT A PUBLISHED SCORE' : `${report.passedRuns}/${report.scoreBasis === 'deterministic' ? report.verifiedRuns : report.aiJudgedRuns} PASSED · ${basis}`}</small>`
       $('#reportRuns').textContent = report.totalRuns
-      $('#reportMissions').textContent = report.uniqueMissions
+      $('#reportMissions').textContent = report.verifiedRuns
       $('#reportTime').textContent = report.medianTimeMs === null ? '—' : formatTime(report.medianTimeMs)
-      $('#reportTrend').textContent = report.trendPoints === null ? 'NEED 4' : `${report.trendPoints > 0 ? '+' : ''}${report.trendPoints}pt`
+      $('#reportTrend').textContent = report.trendPoints === null ? '—' : `${report.trendPoints > 0 ? '+' : ''}${report.trendPoints}pt`
+      $('#reportTrend').title = 'Only shown for at least four runs of the same contract, model, browser mode and evaluator. Not proof of a website change.'
       $('#failureCategories').innerHTML = report.failureCategories.length
         ? report.failureCategories.map((item) => `<li><b>${esc(item.category.replace('_',' '))}</b> — ${item.count} run${item.count === 1 ? '' : 's'}</li>`).join('')
         : '<li>No recorded failures. Suspiciously locked in.</li>'
       $('#failedMissions').innerHTML = report.failedMissions.length
         ? report.failedMissions.map((item) => `<li>${esc(item.goal)} <b>×${item.count}</b></li>`).join('')
         : '<li>Nothing stays cooked yet.</li>'
-      $('#variants').innerHTML = report.variants.map((variant) => `<li><b>${esc(variant.model)}</b> + ${esc(variant.browserMode)} — ${variant.completionRate}% / ${variant.medianTimeMs === null ? '—' : formatTime(variant.medianTimeMs)} (${variant.totalRuns}, ${esc(variant.packId)})</li>`).join('') || '<li>No comparable variants yet.</li>'
+      $('#variants').innerHTML = report.variants.map((variant) => `<li><b>${esc(variant.model)}</b> + ${esc(variant.browserMode)} — ${variant.completionRate}% / ${variant.medianTimeMs === null ? '—' : formatTime(variant.medianTimeMs)} (${variant.totalRuns} runs, contract ${esc(variant.contractId)}, ${esc(variant.evaluationVersion)})</li>`).join('') || '<li>No comparable variants yet.</li>'
       $('#regressions').innerHTML = report.regressions.length
         ? report.regressions.map((item) => `<li><a href="/r/${item.runId}" style="color:inherit"><b>${esc(item.alert.kind)}</b> — ${esc(item.goal)}: ${esc(item.alert.message)}</a></li>`).join('')
-        : '<li>No sirens. The site has not gotten measurably worse.</li>'
+        : '<li>No regression alerts recorded. This does not establish that the site is unchanged.</li>'
+      $('#journeys').innerHTML = report.journeys.length
+        ? report.journeys.map((journey) => `<li><b>${journey.method === 'deterministic' ? 'RULE-CHECKED' : 'AI-JUDGED'}</b> · ${esc(journey.goal)} — ${journey.passedRuns}/${journey.totalRuns} passed · ${esc(journey.model)} / ${esc(journey.browserMode)} · <code>${esc(journey.contractId)}</code> · <a style="color:inherit" href="/r/${encodeURIComponent(journey.latestRunId)}">inspect / rerun →</a></li>`).join('')
+        : '<li>No declared journeys yet.</li>'
+      $('#evidenceBoundary').textContent = report.scoreBasis === 'deterministic'
+        ? `The headline summarizes ${report.verifiedRuns} predeclared URL/text checks, not site-wide readiness. ${report.aiJudgedRuns} AI-judged runs are excluded. Three repeats is a minimum evidence gate, not statistical confidence. Rule quality, agent limits, changing sites and model aliases still affect outcomes. Compare identical contracts and settings; a failed check does not establish the root cause.`
+        : `All ${report.aiJudgedRuns} runs rely on a model reviewing the final screen. Add a URL or visible-text receipt before treating this as a readiness score.`
       $('#reportRunsList').innerHTML = report.runs.length
         ? report.runs.map((run) => `<a class="runrow" href="/r/${run.id}"><b>${esc(run.status)}</b><span>${esc(run.goal)}</span><span>${formatTime(run.timeMs)} · ${run.aura > 0 ? '+' : ''}${run.aura} aura</span></a>`).join('')
         : '<div class="boardrow"><span>—</span><span>No runs. This report is spiritually unemployed.</span><span>—</span><span>—</span></div>'
@@ -334,7 +360,18 @@
 
     $('#challenge').addEventListener('submit', (event) => {
       event.preventDefault()
-      request('/api/runs', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url:$('#url').value,goal:$('#goal').value})})
+      const visibleText = $('#successText').value.trim()
+      const urlContains = $('#successUrl').value.trim()
+      if (!visibleText && !urlContains) {
+        $('#error').textContent = 'Declare visible text or a final URL fragment so the clanker cannot grade its own homework.'
+        $('#error').classList.add('show')
+        return
+      }
+      request('/api/runs', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
+        url:$('#url').value,
+        goal:$('#goal').value,
+        success:{visibleText,urlContains},
+      })})
     })
     $('#demo').addEventListener('click', () => request('/api/demo'))
     $('.examples').addEventListener('click', (event) => {
@@ -342,12 +379,15 @@
       if (!button) return
       $('#url').value = button.dataset.url
       $('#goal').value = button.dataset.goal
+      $('#successText').value = button.dataset.text || ''
+      $('#successUrl').value = button.dataset.path || ''
       $('.form').scrollIntoView({behavior:'smooth',block:'center'})
     })
     $('#copy').addEventListener('click', async () => {
       if (!currentResult) return
       const link = `${location.origin}/r/${currentResult.id}`
-      await navigator.clipboard.writeText(`${currentResult.status}: ${currentResult.goal} — ${formatTime(currentResult.timeMs)}, ${currentResult.aura} aura. Beat my run: ${link}`)
+      const receipt = currentResult.verification?.method === 'deterministic' ? 'predeclared checks' : 'AI-judged'
+      await navigator.clipboard.writeText(`${currentResult.status}: ${currentResult.goal} — ${formatTime(currentResult.timeMs)}, ${receipt}, ${currentResult.aura} aura. Beat my run: ${link}`)
       $('#copy').textContent = 'propaganda copied ✓'
     })
 

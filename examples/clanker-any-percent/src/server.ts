@@ -50,10 +50,10 @@ function html(response: ServerResponse, run?: RunResult, report?: DomainReport):
   const description = report
     ? report.isPreview
       ? `Demo Agent Readiness Report for ${report.host} · replace with live, replayable runs.`
-      : `${report.passedRuns}/${report.totalRuns} missions completed · ${report.readinessLabel} · replayable agent UX evidence.`
+      : `${report.passedRuns}/${report.scoreBasis === "deterministic" ? report.verifiedRuns : report.aiJudgedRuns} ${report.scoreBasis === "deterministic" ? "predeclared receipts" : "AI-judged missions"} passed · ${report.readinessLabel} · replayable agent UX evidence.`
     : run
     ? `${(run.timeMs / 1_000).toFixed(2)}s · ${run.aura > 0 ? "+" : ""}${run.aura} aura · ${run.goal}`
-    : "Make an AI clanker speedrun any website. Watch the replay. Farm aura."
+    : "Prove whether AI customers can complete a real website journey—with a recorded Solari browser and deterministic receipts."
   const shareMeta = [
     `<meta property="og:title" content="${escapeAttribute(title)}">`,
     `<meta property="og:description" content="${escapeAttribute(description)}">`,

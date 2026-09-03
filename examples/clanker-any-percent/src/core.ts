@@ -2,9 +2,10 @@ import { lookup } from "node:dns/promises"
 import { createHash } from "node:crypto"
 import { isIP } from "node:net"
 
-import type { BrowserMode, Challenge, DomainReport, FailureCategory, RegressionAlert, RunResult } from "./types.js"
+import type { BrowserMode, Challenge, DomainReport, FailureCategory, RegressionAlert, RunResult, Verification } from "./types.js"
 
 const BLOCKED_HOSTS = new Set(["localhost", "metadata.google.internal"])
+export const EVALUATION_VERSION = "text-path-v1-12steps"
 
 export function isPrivateAddress(address: string): boolean {
   const normalized = address.toLowerCase()
@@ -41,6 +42,22 @@ export async function validateChallenge(value: unknown): Promise<Challenge> {
   if (url.username || url.password) throw new Error("Credentials are banned from the arena.")
   if (goal.length < 8 || goal.length > 220) throw new Error("Mission must be 8–220 characters. Lock in.")
 
+  if (record.success !== undefined && (!record.success || typeof record.success !== "object" || Array.isArray(record.success))) {
+    throw new Error("Success receipts must be an object with text or URL criteria.")
+  }
+  const successRecord = record.success && typeof record.success === "object"
+    ? record.success as Record<string, unknown>
+    : undefined
+  for (const field of ["visibleText", "urlContains"]) {
+    if (successRecord?.[field] !== undefined && typeof successRecord[field] !== "string") throw new Error("Success criteria must be strings.")
+  }
+  const visibleText = String(successRecord?.visibleText ?? "").trim().replace(/\s+/g, " ")
+  const urlContains = String(successRecord?.urlContains ?? "").trim()
+  if (visibleText.length > 160 || urlContains.length > 160) throw new Error("Success receipts must be 160 characters or fewer.")
+  if ((visibleText && visibleText.length < 2) || (urlContains && urlContains.length < 2)) {
+    throw new Error("Success receipts need at least two characters.")
+  }
+
   const hostname = url.hostname.toLowerCase()
   if (BLOCKED_HOSTS.has(hostname) || hostname.endsWith(".local") || hostname.endsWith(".internal")) {
     throw new Error("Private networks are not a speedrun category.")
@@ -53,7 +70,40 @@ export async function validateChallenge(value: unknown): Promise<Challenge> {
   }
 
   url.hash = ""
-  return { url: url.toString(), goal }
+  const success = visibleText || urlContains
+    ? { ...(visibleText && { visibleText }), ...(urlContains && { urlContains }) }
+    : undefined
+  return { url: url.toString(), goal, success }
+}
+
+export function journeyId(challenge: Challenge): string | undefined {
+  if (!challenge.success?.visibleText && !challenge.success?.urlContains) return undefined
+  return createHash("sha256").update(JSON.stringify({
+    url: challenge.url,
+    goal: challenge.goal.toLowerCase(),
+    visibleText: challenge.success.visibleText?.toLowerCase(),
+    urlContains: challenge.success.urlContains,
+  })).digest("hex").slice(0, 10)
+}
+
+export function verifyOutcome(challenge: Challenge, state: { url: string; text: string }): Verification | undefined {
+  if (!challenge.success?.visibleText && !challenge.success?.urlContains) return undefined
+  const pageText = state.text.replace(/\s+/g, " ").toLowerCase()
+  const parsedUrl = new URL(state.url)
+  const finalUrl = parsedUrl.pathname + parsedUrl.search
+  const checks = [
+    ...(challenge.success.visibleText ? [{
+      kind: "visible_text" as const,
+      expected: challenge.success.visibleText,
+      passed: pageText.includes(challenge.success.visibleText.toLowerCase()),
+    }] : []),
+    ...(challenge.success.urlContains ? [{
+      kind: "final_url" as const,
+      expected: challenge.success.urlContains,
+      passed: finalUrl.includes(challenge.success.urlContains),
+    }] : []),
+  ]
+  return { method: "deterministic", checks, observedUrl: state.url }
 }
 
 export function scoreRun(input: {
@@ -98,12 +148,17 @@ function failureCategory(run: RunResult): FailureCategory {
 
 const runModel = (run: RunResult) => run.model ?? "gpt-5.4-mini"
 const runBrowserMode = (run: RunResult): BrowserMode => run.browserMode ?? "standard"
+const runContract = (run: RunResult) => run.contractId ?? createHash("sha256").update(JSON.stringify([run.url, run.goal])).digest("hex").slice(0, 10)
+const cohortKey = (run: RunResult) => JSON.stringify([runContract(run), runModel(run), runBrowserMode(run), run.evaluationVersion ?? "legacy", run.packId ?? null, run.verification?.method ?? "ai_judge"])
 
 export function detectRegression(current: RunResult, history: RunResult[]): RegressionAlert | undefined {
   const comparable = history
     .filter((run) => run.host === current.host && run.goal === current.goal)
     .filter((run) => runModel(run) === runModel(current) && runBrowserMode(run) === runBrowserMode(current))
     .filter((run) => run.packId === current.packId)
+    .filter((run) => run.contractId === current.contractId)
+    .filter((run) => run.url === current.url && run.evaluationVersion === current.evaluationVersion)
+    .filter((run) => !run.isDemo && Date.parse(run.createdAt) < Date.parse(current.createdAt))
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
 
   const previous = comparable[0]
@@ -124,42 +179,41 @@ export function detectRegression(current: RunResult, history: RunResult[]): Regr
 
 export function buildDomainReport(host: string, input: RunResult[]): DomainReport {
   const normalizedHost = host.toLowerCase().replace(/^www\./, "")
-  const runs = input
+  const matching = input
     .filter((run) => run.host.toLowerCase().replace(/^www\./, "") === normalizedHost)
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
-  const passedRuns = runs.filter(({ passed }) => passed)
-  const completionRate = runs.length ? Math.round((passedRuns.length / runs.length) * 100) : 0
+  const runs = matching.some((run) => !run.isDemo) ? matching.filter((run) => !run.isDemo) : matching
+  const verified = runs.filter(({ verification }) => verification?.method === "deterministic")
+  const aiJudged = runs.filter(({ verification }) => !verification || verification.method === "ai_judge")
+  const scoreRuns = verified.length ? verified : aiJudged
+  const passedRuns = scoreRuns.filter(({ passed }) => passed)
+  const completionRate = scoreRuns.length ? Math.round((passedRuns.length / scoreRuns.length) * 100) : 0
+  const scoreBasis = verified.length ? "deterministic" as const : "ai_judge" as const
   const counts = <T extends string>(values: T[]) => [...values.reduce((map, value) => map.set(value, (map.get(value) ?? 0) + 1), new Map<T, number>())]
     .map(([value, count]) => ({ value, count }))
     .sort((left, right) => right.count - left.count)
 
   let trendPoints: number | null = null
-  if (runs.length >= 4) {
-    const chronological = [...runs].reverse()
+  if (scoreRuns.length >= 4 && new Set(scoreRuns.map(cohortKey)).size === 1) {
+    const chronological = [...scoreRuns].reverse()
     const middle = Math.floor(chronological.length / 2)
     const rate = (group: RunResult[]) => (group.filter(({ passed }) => passed).length / group.length) * 100
     trendPoints = Math.round(rate(chronological.slice(middle)) - rate(chronological.slice(0, middle)))
   }
 
-  const readinessLabel = completionRate >= 90
-    ? "AGENT NATIVE"
-    : completionRate >= 70
-      ? "MOSTLY SENTIENT"
-      : completionRate >= 40
-        ? "NEEDS PATCHES"
-        : "HUMANS ONLY"
-
-  const monitoredRuns = runs.filter(({ packId }) => packId)
-  const comparableRuns = monitoredRuns.length ? monitoredRuns : runs
+  const monitoredRuns = scoreRuns.filter(({ packId }) => packId)
+  const comparableRuns = monitoredRuns.length ? monitoredRuns : scoreRuns
   const variantGroups = new Map<string, RunResult[]>()
   for (const run of comparableRuns) {
-    const key = `${run.packId ?? "ad-hoc"}\u0000${runModel(run)}\u0000${runBrowserMode(run)}`
+    const key = cohortKey(run)
     variantGroups.set(key, [...(variantGroups.get(key) ?? []), run])
   }
   const variants = [...variantGroups.values()].map((group) => {
     const passed = group.filter(({ passed }) => passed)
     return {
       packId: group[0]!.packId ?? "ad-hoc",
+      contractId: runContract(group[0]!),
+      evaluationVersion: group[0]!.evaluationVersion ?? "legacy",
       model: runModel(group[0]!),
       browserMode: runBrowserMode(group[0]!),
       totalRuns: group.length,
@@ -168,23 +222,58 @@ export function buildDomainReport(host: string, input: RunResult[]): DomainRepor
     }
   }).sort((left, right) => right.completionRate - left.completionRate || (left.medianTimeMs ?? Infinity) - (right.medianTimeMs ?? Infinity))
 
+  const journeyGroups = new Map<string, RunResult[]>()
+  for (const run of runs) {
+    const key = cohortKey(run)
+    journeyGroups.set(key, [...(journeyGroups.get(key) ?? []), run])
+  }
+  const journeys = [...journeyGroups.values()].map((group) => {
+    const passed = group.filter(({ passed }) => passed)
+    return {
+      contractId: runContract(group[0]!),
+      model: runModel(group[0]!),
+      browserMode: runBrowserMode(group[0]!),
+      evaluationVersion: group[0]!.evaluationVersion ?? "legacy",
+      latestRunId: group[0]!.id,
+      goal: group[0]!.goal,
+      method: group[0]!.verification?.method ?? "ai_judge" as const,
+      totalRuns: group.length,
+      passedRuns: passed.length,
+      completionRate: Math.round((passed.length / group.length) * 100),
+      medianTimeMs: median(passed.map(({ timeMs }) => timeMs)),
+    }
+  }).sort((left, right) => Number(right.method === "deterministic") - Number(left.method === "deterministic") || right.totalRuns - left.totalRuns)
+
+  const hasRepeatedVerifiedJourney = journeys.some(({ method, totalRuns }) => method === "deterministic" && totalRuns >= 3)
+  const readinessLabel = runs.length === 0
+    ? "NO RECEIPTS"
+    : scoreBasis === "ai_judge"
+      ? "AI-JUDGED ONLY"
+      : !hasRepeatedVerifiedJourney
+        ? "NEEDS 3X REPEAT"
+        : "REPEATED CHECKS"
+
   return {
     host: normalizedHost,
     isPreview: runs.length > 0 && runs.every(({ isDemo }) => isDemo),
     totalRuns: runs.length,
     uniqueMissions: new Set(runs.map(({ goal }) => goal.toLowerCase())).size,
     passedRuns: passedRuns.length,
+    verifiedRuns: verified.length,
+    aiJudgedRuns: aiJudged.length,
+    scoreBasis,
     completionRate,
     medianTimeMs: median(passedRuns.map(({ timeMs }) => timeMs)),
     medianActions: median(runs.map(({ actions }) => actions)),
     readinessLabel,
     trendPoints,
-    failureCategories: counts(runs.filter(({ passed }) => !passed).map(failureCategory))
+    failureCategories: counts(scoreRuns.filter(({ passed }) => !passed).map(failureCategory))
       .map(({ value: category, count }) => ({ category, count })),
-    failedMissions: counts(runs.filter(({ passed }) => !passed).map(({ goal }) => goal))
+    failedMissions: counts(scoreRuns.filter(({ passed }) => !passed).map(({ goal }) => goal))
       .map(({ value: goal, count }) => ({ goal, count })).slice(0, 5),
     variants,
     regressions: runs.filter((run) => run.regression).map((run) => ({ runId: run.id, goal: run.goal, alert: run.regression! })).slice(0, 10),
+    journeys,
     runs: runs.slice(0, 12),
   }
 }
@@ -205,6 +294,15 @@ export const demoResult: RunResult = {
   confidence: 94,
   failureCategory: "none",
   evidence: "Ended on a red chair product page with a visible $19.99 price after sorting matching results.",
+  contractId: "demo00cafe",
+  success: { visibleText: "$19.99", urlContains: "/product/" },
+  verification: {
+    method: "deterministic",
+    checks: [
+      { kind: "visible_text", expected: "$19.99", passed: true },
+      { kind: "final_url", expected: "/product/", passed: true },
+    ],
+  },
   lastWords: "Ugly run. Still counts. Mods approved it.",
   sessionId: "brw_demo_clanker_locked_in",
   replayUrl: null,

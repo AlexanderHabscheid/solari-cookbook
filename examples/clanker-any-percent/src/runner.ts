@@ -2,7 +2,7 @@ import { Solari } from "@solarisdk/browser"
 import OpenAI from "openai"
 import patchrightBrowsers from "../node_modules/patchright-core/browsers.json" with { type: "json" }
 
-import { runId, scoreRun } from "./core.js"
+import { EVALUATION_VERSION, journeyId, runId, scoreRun, verifyOutcome } from "./core.js"
 import type { AgentAction, Challenge, ElementCandidate, FailureCategory, RunOptions, RunResult, RunStep } from "./types.js"
 
 type AgentPage = {
@@ -38,7 +38,7 @@ function sameSite(startHost: string, currentHost: string): boolean {
   return currentHost === startHost || currentHost === root || currentHost.endsWith(`.${root}`)
 }
 
-async function observe(page: AgentPage): Promise<PageState> {
+async function observe(page: AgentPage, fullText = false): Promise<PageState> {
   const elements = await page.evaluate<ElementCandidate[]>(`(() => {
     const visible = (element) => {
       const rect = element.getBoundingClientRect()
@@ -64,7 +64,8 @@ async function observe(page: AgentPage): Promise<PageState> {
       }
     })
   })()`)
-  const text = (await page.locator("body").innerText({ timeout: 10_000 })).replace(/\s+/g, " ").slice(0, 14_000)
+  const bodyText = (await page.locator("body").innerText({ timeout: 10_000 })).replace(/\s+/g, " ")
+  const text = fullText ? bodyText : bodyText.slice(0, 14_000)
   const screenshot = await page.screenshot({ type: "jpeg", quality: 45 })
 
   return {
@@ -94,7 +95,7 @@ async function chooseAction(openai: OpenAI, model: string, challenge: Challenge,
       content: [
         {
           type: "input_text",
-          text: JSON.stringify({ mission: challenge.goal, page: { ...state, screenshot: undefined }, previousSteps: steps }),
+          text: JSON.stringify({ mission: challenge.goal, successContract: challenge.success, page: { ...state, screenshot: undefined }, previousSteps: steps }),
         },
         { type: "input_image", image_url: `data:image/jpeg;base64,${state.screenshot}`, detail: "low" },
       ],
@@ -234,7 +235,7 @@ export async function runChallenge(challenge: Challenge, options: RunOptions = {
         await sleep(650)
       }
 
-      finalState = await observe(page)
+      finalState = await observe(page, Boolean(challenge.success))
       const finalHost = new URL(finalState.url).hostname
       if (!sameSite(startHost, finalHost)) throw new Error("Clanker left the approved map. Run invalid.")
       if (finalState.url !== lastUrl) redirects += 1
@@ -256,7 +257,18 @@ export async function runChallenge(challenge: Challenge, options: RunOptions = {
   }
 
   if (!finalState) throw new Error("The browser never made it out of spawn.")
-  const verdict = await judge(openai, model, challenge, finalState, steps)
+  const deterministic = verifyOutcome(challenge, finalState)
+  const verification = deterministic ?? { method: "ai_judge" as const, checks: [] }
+  const verdict = deterministic
+    ? {
+        passed: deterministic.checks.every(({ passed }) => passed),
+        confidence: null,
+        failureCategory: deterministic.checks.find(({ passed }) => !passed)?.kind === "final_url"
+          ? "navigation" as const
+          : "missing_content" as const,
+        evidence: deterministic.checks.map((check) => `${check.passed ? "PASS" : "FAIL"} ${check.kind === "final_url" ? "URL path/query" : "page text"} contains “${check.expected}”`).join(" · "),
+      }
+    : await judge(openai, model, challenge, finalState, steps)
   const score = scoreRun({ passed: verdict.passed, timeMs, actions: steps.length, redirects, bossFights })
   const url = new URL(challenge.url)
 
@@ -275,6 +287,10 @@ export async function runChallenge(challenge: Challenge, options: RunOptions = {
     confidence: verdict.confidence,
     failureCategory: verdict.passed ? "none" : verdict.failureCategory,
     evidence: verdict.evidence,
+    contractId: journeyId(challenge),
+    success: challenge.success,
+    verification,
+    evaluationVersion: EVALUATION_VERSION,
     sessionId,
     replayUrl,
     model,

@@ -1,6 +1,24 @@
 export type Challenge = {
   url: string
   goal: string
+  success?: SuccessContract
+}
+
+export type SuccessContract = {
+  visibleText?: string
+  urlContains?: string
+}
+
+export type VerificationCheck = {
+  kind: "visible_text" | "final_url"
+  expected: string
+  passed: boolean
+}
+
+export type Verification = {
+  method: "deterministic" | "ai_judge"
+  checks: VerificationCheck[]
+  observedUrl?: string
 }
 
 export type BrowserMode = "standard" | "stealth"
@@ -55,9 +73,13 @@ export type RunResult = {
   redirects: number
   bossFights: number
   aura: number
-  confidence: number
+  confidence: number | null
   failureCategory: FailureCategory
   evidence: string
+  contractId?: string
+  success?: SuccessContract
+  verification?: Verification
+  evaluationVersion?: string
   lastWords: string
   sessionId: string
   replayUrl: string | null
@@ -95,6 +117,9 @@ export type DomainReport = {
   totalRuns: number
   uniqueMissions: number
   passedRuns: number
+  verifiedRuns: number
+  aiJudgedRuns: number
+  scoreBasis: "deterministic" | "ai_judge"
   completionRate: number
   medianTimeMs: number | null
   medianActions: number | null
@@ -102,7 +127,20 @@ export type DomainReport = {
   trendPoints: number | null
   failureCategories: Array<{ category: string; count: number }>
   failedMissions: Array<{ goal: string; count: number }>
-  variants: Array<{ packId: string; model: string; browserMode: BrowserMode; totalRuns: number; completionRate: number; medianTimeMs: number | null }>
+  variants: Array<{ packId: string; contractId: string; model: string; browserMode: BrowserMode; evaluationVersion: string; totalRuns: number; completionRate: number; medianTimeMs: number | null }>
   regressions: Array<{ runId: string; goal: string; alert: RegressionAlert }>
+  journeys: Array<{
+    contractId: string
+    model: string
+    browserMode: BrowserMode
+    evaluationVersion: string
+    latestRunId: string
+    goal: string
+    method: Verification["method"]
+    totalRuns: number
+    passedRuns: number
+    completionRate: number
+    medianTimeMs: number | null
+  }>
   runs: RunResult[]
 }

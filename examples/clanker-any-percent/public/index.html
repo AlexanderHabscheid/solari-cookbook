@@ -39,6 +39,8 @@
     .submit:hover { color:var(--black); background:var(--acid); }
     .submit:disabled { opacity:.55; cursor:wait; }
     .demo { width:100%; margin-top:8px; padding:10px; border:0; background:transparent; text-decoration:underline; font-weight:900; }
+    .mint { width:100%; margin-top:8px; padding:12px; border:2px solid var(--black); color:var(--black); background:var(--pink); font-weight:1000; text-transform:uppercase; }
+    #shareChallenge { display:none; margin-top:10px; color:var(--black); font-weight:1000; text-align:center; text-transform:uppercase; }
     .proof { min-width:0; margin-top:14px; padding:12px; border:2px dashed var(--black); background:#e7e4d8; }
     .proof legend { padding:0 6px; font:1000 10px ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; }
     .proof p { margin:4px 0 0; color:#4e4e49; font:10px/1.35 ui-monospace,monospace; }
@@ -166,6 +168,8 @@
           <p>All supplied checks must pass. Text/frame titles ignore case; URL path/query is case-sensitive. A match proves only these conditions—not purchase completion or site-wide readiness.</p>
         </fieldset>
         <button class="submit" id="submit" type="submit">Start the run →</button>
+        <button class="mint" id="mint" type="button">mint a free challenge link →</button>
+        <a id="shareChallenge" target="_blank" rel="noreferrer">post the challenge on X ↗</a>
         <button class="demo" id="demo" type="button">see rigged demo (free)</button>
       </form>
     </section>
@@ -252,6 +256,17 @@
     let liveRunsEnabled = false
     const esc = (value) => String(value).replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[char])
     const formatTime = (ms) => `${(ms / 1000).toFixed(2)}s`
+    const challengeFromForm = () => ({
+      url: $('#url').value.trim(), goal: $('#goal').value.trim(),
+      visibleText: $('#successText').value.trim(), urlContains: $('#successUrl').value.trim(), frameTitle: $('#successFrame').value.trim(),
+    })
+    const challengeLink = (challenge) => {
+      const query = new URLSearchParams({url:challenge.url,goal:challenge.goal})
+      if (challenge.visibleText) query.set('text', challenge.visibleText)
+      if (challenge.urlContains) query.set('path', challenge.urlContains)
+      if (challenge.frameTitle) query.set('frame', challenge.frameTitle)
+      return `${location.origin}/c?${query}`
+    }
 
     function startLoading() {
       let index = 0
@@ -377,6 +392,25 @@
       })})
     })
     $('#demo').addEventListener('click', () => request('/api/demo'))
+    $('#mint').addEventListener('click', async () => {
+      const challenge = challengeFromForm()
+      if (challenge.goal.length < 8 || (!challenge.visibleText && !challenge.urlContains && !challenge.frameTitle)) {
+        $('#error').textContent = 'Write a mission and at least one check before minting the allegations.'
+        $('#error').classList.add('show')
+        return
+      }
+      try { new URL(challenge.url) } catch {
+        $('#error').textContent = 'That map URL is cooked.'
+        $('#error').classList.add('show')
+        return
+      }
+      const link = challengeLink(challenge)
+      await navigator.clipboard.writeText(link)
+      $('#mint').textContent = 'challenge copied ✓'
+      $('#shareChallenge').href = `https://x.com/intent/post?text=${encodeURIComponent(`I challenged a clanker to survive ${new URL(challenge.url).hostname}: “${challenge.goal}”\n\nRun the allegations: ${link}`)}`
+      $('#shareChallenge').style.display = 'block'
+      history.replaceState(null, '', link)
+    })
     $('.examples').addEventListener('click', (event) => {
       const button = event.target.closest('button')
       if (!button) return
@@ -410,6 +444,16 @@
       $('#runtimeStatus').textContent = liveRunsEnabled ? '● SOLARI RUNNER ONLINE' : '● REPLAY LAB ONLINE'
       $('#submit').disabled = !liveRunsEnabled
       $('#submit').textContent = liveRunsEnabled ? 'start the run →' : 'live runs unlock after key rotation'
+    }
+    if (location.pathname === '/c') {
+      const query = new URLSearchParams(location.search)
+      $('#url').value = query.get('url') || ''
+      $('#goal').value = query.get('goal') || ''
+      $('#successText').value = query.get('text') || ''
+      $('#successUrl').value = query.get('path') || ''
+      $('#successFrame').value = query.get('frame') || ''
+      $('.kicker').textContent = 'You have been publicly challenged'
+      $('#mint').textContent = 'copy challenge link →'
     }
     const match = location.pathname.match(/^\/r\/([a-f0-9]{8})$/)
     if (match) request(`/api/runs/${match[1]}`)

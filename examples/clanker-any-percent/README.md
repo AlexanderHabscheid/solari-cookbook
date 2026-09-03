@@ -12,6 +12,10 @@ shareable `LOCKED IN` or `COOKED` card with time, actions, redirects, CAPTCHA
 boss fights, aura, and a Solari replay. Both conditions must pass when both are
 provided.
 
+Anyone can mint a public challenge URL before spending a credit. The URL freezes
+the start page, mission, and checks; recipients can copy, post, and run the same
+contract. It needs no account or new persistence layer.
+
 That distinction is the product: the agent does not grade its own work, and the
 headline domain score excludes older AI-judged runs whenever deterministic
 receipts exist. Reports disclose the evidence basis, keep each journey under a

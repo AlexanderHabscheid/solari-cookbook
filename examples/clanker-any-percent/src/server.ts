@@ -4,7 +4,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { buildDomainReport, demoResult, detectRegression, validateChallenge } from "./core.js"
 import { missionPacks } from "./mission-packs.js"
 import { allRuns, dailyRunCount, getRun, leaderboard, loadRuns, runsForHost, saveRun } from "./store.js"
-import type { DomainReport, RunResult } from "./types.js"
+import type { Challenge, DomainReport, RunResult } from "./types.js"
 
 const page = await readFile(new URL("../public/index.html", import.meta.url), "utf8")
 const port = Number(process.env.PORT ?? 3000)
@@ -43,16 +43,37 @@ function reportFor(host: string): DomainReport {
   return buildDomainReport(host, runs)
 }
 
-function html(response: ServerResponse, run?: RunResult, report?: DomainReport): void {
+function sharedChallenge(url: URL): Challenge | undefined {
+  const goal = (url.searchParams.get("goal") ?? "").trim().slice(0, 220)
+  try {
+    const target = new URL((url.searchParams.get("url") ?? "").slice(0, 2_048))
+    if (!(["http:", "https:"] as string[]).includes(target.protocol) || goal.length < 8) return undefined
+    const success = {
+      visibleText: (url.searchParams.get("text") ?? "").trim().slice(0, 160) || undefined,
+      urlContains: (url.searchParams.get("path") ?? "").trim().slice(0, 160) || undefined,
+      frameTitle: (url.searchParams.get("frame") ?? "").trim().slice(0, 160) || undefined,
+    }
+    if (!success.visibleText && !success.urlContains && !success.frameTitle) return undefined
+    return { url: target.toString(), goal, success }
+  } catch {
+    return undefined
+  }
+}
+
+function html(response: ServerResponse, run?: RunResult, report?: DomainReport, challenge?: Challenge): void {
+  const challengeHost = challenge ? new URL(challenge.url).hostname.replace(/^www\./, "") : undefined
   const title = report
     ? `${report.host} Agent Readiness${report.isPreview ? " Preview" : `: ${report.completionRate}%`}`
-    : run ? `${run.status}: ${run.host} ANY%` : "CLANKER ANY%"
+    : run ? `${run.status}: ${run.host} ANY%`
+    : challenge ? `${challengeHost} challenged a clanker` : "CLANKER ANY%"
   const description = report
     ? report.isPreview
       ? `Demo Agent Readiness Report for ${report.host} · replace with live, replayable runs.`
       : `${report.passedRuns}/${report.scoreBasis === "deterministic" ? report.verifiedRuns : report.aiJudgedRuns} ${report.scoreBasis === "deterministic" ? "predeclared receipts" : "AI-judged missions"} passed · ${report.readinessLabel} · replayable agent UX evidence.`
     : run
     ? `${(run.timeMs / 1_000).toFixed(2)}s · ${run.aura > 0 ? "+" : ""}${run.aura} aura · ${run.goal}`
+    : challenge
+    ? `Can an AI browser complete “${challenge.goal}”? Run the public challenge and watch the Solari replay.`
     : "Prove whether AI customers can complete a real website journey—with a recorded Solari browser and deterministic receipts."
   const shareMeta = [
     `<meta property="og:title" content="${escapeAttribute(title)}">`,
@@ -82,10 +103,20 @@ async function readJson(request: IncomingMessage): Promise<unknown> {
 }
 
 const server = createServer(async (request, response) => {
-  const path = new URL(request.url ?? "/", "http://local").pathname
+  const requestUrl = new URL(request.url ?? "/", "http://local")
+  const path = requestUrl.pathname
   if (/^\/(?:r|d|api\/(?:leaderboard|domains|runs))(?:\/|$)/.test(path)) await loadRuns()
   if (request.method === "GET" && path === "/") {
     html(response)
+    return
+  }
+  if (request.method === "GET" && path === "/c") {
+    const challenge = sharedChallenge(requestUrl)
+    if (!challenge) {
+      json(response, 400, { error: "That challenge contract is cooked." })
+      return
+    }
+    html(response, undefined, undefined, challenge)
     return
   }
   if (request.method === "GET" && /^\/r\/[a-f0-9]{8}$/.test(path)) {

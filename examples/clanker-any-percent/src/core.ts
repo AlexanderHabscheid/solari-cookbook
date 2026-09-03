@@ -5,7 +5,7 @@ import { isIP } from "node:net"
 import type { BrowserMode, Challenge, DomainReport, FailureCategory, RegressionAlert, RunResult, Verification } from "./types.js"
 
 const BLOCKED_HOSTS = new Set(["localhost", "metadata.google.internal"])
-export const EVALUATION_VERSION = "text-path-v1-12steps"
+export const EVALUATION_VERSION = "text-path-frame-v2-12steps"
 
 export function isPrivateAddress(address: string): boolean {
   const normalized = address.toLowerCase()
@@ -48,13 +48,14 @@ export async function validateChallenge(value: unknown): Promise<Challenge> {
   const successRecord = record.success && typeof record.success === "object"
     ? record.success as Record<string, unknown>
     : undefined
-  for (const field of ["visibleText", "urlContains"]) {
+  for (const field of ["visibleText", "urlContains", "frameTitle"]) {
     if (successRecord?.[field] !== undefined && typeof successRecord[field] !== "string") throw new Error("Success criteria must be strings.")
   }
   const visibleText = String(successRecord?.visibleText ?? "").trim().replace(/\s+/g, " ")
   const urlContains = String(successRecord?.urlContains ?? "").trim()
-  if (visibleText.length > 160 || urlContains.length > 160) throw new Error("Success receipts must be 160 characters or fewer.")
-  if ((visibleText && visibleText.length < 2) || (urlContains && urlContains.length < 2)) {
+  const frameTitle = String(successRecord?.frameTitle ?? "").trim().replace(/\s+/g, " ")
+  if (visibleText.length > 160 || urlContains.length > 160 || frameTitle.length > 160) throw new Error("Success receipts must be 160 characters or fewer.")
+  if ([visibleText, urlContains, frameTitle].some((criterion) => criterion && criterion.length < 2)) {
     throw new Error("Success receipts need at least two characters.")
   }
 
@@ -70,24 +71,25 @@ export async function validateChallenge(value: unknown): Promise<Challenge> {
   }
 
   url.hash = ""
-  const success = visibleText || urlContains
-    ? { ...(visibleText && { visibleText }), ...(urlContains && { urlContains }) }
+  const success = visibleText || urlContains || frameTitle
+    ? { ...(visibleText && { visibleText }), ...(urlContains && { urlContains }), ...(frameTitle && { frameTitle }) }
     : undefined
   return { url: url.toString(), goal, success }
 }
 
 export function journeyId(challenge: Challenge): string | undefined {
-  if (!challenge.success?.visibleText && !challenge.success?.urlContains) return undefined
+  if (!challenge.success?.visibleText && !challenge.success?.urlContains && !challenge.success?.frameTitle) return undefined
   return createHash("sha256").update(JSON.stringify({
     url: challenge.url,
     goal: challenge.goal.toLowerCase(),
     visibleText: challenge.success.visibleText?.toLowerCase(),
     urlContains: challenge.success.urlContains,
+    frameTitle: challenge.success.frameTitle?.toLowerCase(),
   })).digest("hex").slice(0, 10)
 }
 
-export function verifyOutcome(challenge: Challenge, state: { url: string; text: string }): Verification | undefined {
-  if (!challenge.success?.visibleText && !challenge.success?.urlContains) return undefined
+export function verifyOutcome(challenge: Challenge, state: { url: string; text: string; frameTitles?: string[] }): Verification | undefined {
+  if (!challenge.success?.visibleText && !challenge.success?.urlContains && !challenge.success?.frameTitle) return undefined
   const pageText = state.text.replace(/\s+/g, " ").toLowerCase()
   const parsedUrl = new URL(state.url)
   const finalUrl = parsedUrl.pathname + parsedUrl.search
@@ -101,6 +103,11 @@ export function verifyOutcome(challenge: Challenge, state: { url: string; text: 
       kind: "final_url" as const,
       expected: challenge.success.urlContains,
       passed: finalUrl.includes(challenge.success.urlContains),
+    }] : []),
+    ...(challenge.success.frameTitle ? [{
+      kind: "frame_title" as const,
+      expected: challenge.success.frameTitle,
+      passed: (state.frameTitles ?? []).some((title) => title.toLowerCase().includes(challenge.success!.frameTitle!.toLowerCase())),
     }] : []),
   ]
   return { method: "deterministic", checks, observedUrl: state.url }

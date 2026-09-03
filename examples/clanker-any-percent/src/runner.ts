@@ -26,6 +26,7 @@ type PageState = {
   elements: ElementCandidate[]
   screenshot: string
   captcha: boolean
+  frameTitles: string[]
 }
 
 const MAX_STEPS = 12
@@ -67,6 +68,10 @@ async function observe(page: AgentPage, fullText = false): Promise<PageState> {
   const bodyText = (await page.locator("body").innerText({ timeout: 10_000 })).replace(/\s+/g, " ")
   const text = fullText ? bodyText : bodyText.slice(0, 14_000)
   const screenshot = await page.screenshot({ type: "jpeg", quality: 45 })
+  const frameTitles = await page.evaluate<string[]>(`[...document.querySelectorAll("iframe[title]")]
+    .filter((frame) => { const rect = frame.getBoundingClientRect(); const style = getComputedStyle(frame); return rect.width > 3 && rect.height > 3 && style.visibility !== "hidden" && style.display !== "none" })
+    .map((frame) => frame.getAttribute("title") || "")
+    .filter(Boolean)`)
 
   return {
     title: await page.title(),
@@ -75,6 +80,7 @@ async function observe(page: AgentPage, fullText = false): Promise<PageState> {
     elements,
     screenshot: Buffer.from(screenshot).toString("base64"),
     captcha: /captcha|verify (you are|that you're) human|checking your browser|cloudflare/i.test(text),
+    frameTitles,
   }
 }
 
@@ -266,7 +272,7 @@ export async function runChallenge(challenge: Challenge, options: RunOptions = {
         failureCategory: deterministic.checks.find(({ passed }) => !passed)?.kind === "final_url"
           ? "navigation" as const
           : "missing_content" as const,
-        evidence: deterministic.checks.map((check) => `${check.passed ? "PASS" : "FAIL"} ${check.kind === "final_url" ? "URL path/query" : "page text"} contains “${check.expected}”`).join(" · "),
+        evidence: deterministic.checks.map((check) => `${check.passed ? "PASS" : "FAIL"} ${check.kind === "final_url" ? "URL path/query" : check.kind === "frame_title" ? "visible frame title" : "page text"} contains “${check.expected}”`).join(" · "),
       }
     : await judge(openai, model, challenge, finalState, steps)
   const score = scoreRun({ passed: verdict.passed, timeMs, actions: steps.length, redirects, bossFights })

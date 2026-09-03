@@ -7,10 +7,11 @@ export type Challenge = {
 export type SuccessContract = {
   visibleText?: string
   urlContains?: string
+  frameTitle?: string
 }
 
 export type VerificationCheck = {
-  kind: "visible_text" | "final_url"
+  kind: "visible_text" | "final_url" | "frame_title"
   expected: string
   passed: boolean
 }

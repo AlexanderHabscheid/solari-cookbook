@@ -162,7 +162,8 @@
           <legend>Predeclare the receipt</legend>
           <label>Final page visibly contains<input id="successText" maxlength="160" value="brain rot" placeholder="e.g. $49/month"></label>
           <label>Final URL path/query contains<input id="successUrl" maxlength="160" value="/wiki/Brain_rot" placeholder="e.g. /pricing"></label>
-          <p>Both supplied checks must pass. Text ignores case and whitespace; URL path/query is case-sensitive. A match proves only these conditions—not purchase completion or site-wide readiness.</p>
+          <label>Visible embedded frame title contains<input id="successFrame" maxlength="160" placeholder="e.g. Book a call"></label>
+          <p>All supplied checks must pass. Text/frame titles ignore case; URL path/query is case-sensitive. A match proves only these conditions—not purchase completion or site-wide readiness.</p>
         </fieldset>
         <button class="submit" id="submit" type="submit">Start the run →</button>
         <button class="demo" id="demo" type="button">see rigged demo (free)</button>
@@ -286,6 +287,7 @@
       $('#goal').value = run.goal
       $('#successText').value = run.success?.visibleText || ''
       $('#successUrl').value = run.success?.urlContains || ''
+      $('#successFrame').value = run.success?.frameTitle || ''
       $('#submit').textContent = 'try to beat this run →'
       const permalink = `${location.origin}/r/${run.id}`
       const receipt = run.verification?.method === 'deterministic' ? 'PREDECLARED CHECKS' : 'AI-JUDGED'
@@ -362,15 +364,16 @@
       event.preventDefault()
       const visibleText = $('#successText').value.trim()
       const urlContains = $('#successUrl').value.trim()
-      if (!visibleText && !urlContains) {
-        $('#error').textContent = 'Declare visible text or a final URL fragment so the clanker cannot grade its own homework.'
+      const frameTitle = $('#successFrame').value.trim()
+      if (!visibleText && !urlContains && !frameTitle) {
+        $('#error').textContent = 'Declare page text, a URL path, or a visible embedded-frame title so the clanker cannot grade its own homework.'
         $('#error').classList.add('show')
         return
       }
       request('/api/runs', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
         url:$('#url').value,
         goal:$('#goal').value,
-        success:{visibleText,urlContains},
+        success:{visibleText,urlContains,frameTitle},
       })})
     })
     $('#demo').addEventListener('click', () => request('/api/demo'))
@@ -381,6 +384,7 @@
       $('#goal').value = button.dataset.goal
       $('#successText').value = button.dataset.text || ''
       $('#successUrl').value = button.dataset.path || ''
+      $('#successFrame').value = button.dataset.frame || ''
       $('.form').scrollIntoView({behavior:'smooth',block:'center'})
     })
     $('#copy').addEventListener('click', async () => {

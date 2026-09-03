@@ -43,6 +43,9 @@ test("predeclared success contracts produce deterministic receipts", () => {
   assert.equal(verifyOutcome(challenge, { url: "https://example.com/Pricing", text: "$49 / month" })?.checks[1]?.passed, false)
   assert.notEqual(journeyId(challenge), journeyId({ ...challenge, success: { ...challenge.success, urlContains: "/Pricing" } }))
   assert.equal(verifyOutcome(challenge, { url: "https://example.com/pricing", text: "x".repeat(20_000) + " $49 / month" })?.checks[0]?.passed, true)
+  const modal = { ...challenge, success: { frameTitle: "Book a call" } }
+  assert.equal(verifyOutcome(modal, { url: challenge.url, text: "", frameTitles: ["Book a call — scheduling"] })?.checks[0]?.passed, true)
+  assert.equal(verifyOutcome(modal, { url: challenge.url, text: "", frameTitles: [] })?.checks[0]?.passed, false)
 })
 
 test("builds an evidence-backed domain readiness report", () => {
@@ -108,7 +111,7 @@ test("reports exclude demo and AI-judged data from rule-checked rates and mixed 
 })
 
 test("malformed contracts are rejected before DNS or paid execution", async () => {
-  for (const success of [[], "pricing", null, { visibleText: 42 }, { urlContains: "/" }, { visibleText: "x".repeat(161) }]) {
+  for (const success of [[], "pricing", null, { visibleText: 42 }, { frameTitle: 42 }, { urlContains: "/" }, { visibleText: "x".repeat(161) }]) {
     await assert.rejects(validateChallenge({ url: "https://example.com/", goal: "Find the pricing page", success }), /Success/)
   }
 })

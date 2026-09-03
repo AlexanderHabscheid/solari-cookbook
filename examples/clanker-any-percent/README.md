@@ -5,7 +5,8 @@ Live app: <https://clanker-any-percent.vercel.app>
 Test whether an AI browser can reach a predeclared milestone on a public website.
 
 Paste a URL, a mission, and a win condition such as visible text (`$49/month`)
-or a final URL path/query fragment (`/pricing`). A recorded Solari browser gets 12 moves.
+or a final URL path/query fragment (`/pricing`). Embedded scheduling flows can
+instead declare a visible frame title (`Book a call`). A recorded Solari browser gets 12 moves.
 Afterward CLANKER checks the predeclared condition in code and produces a
 shareable `LOCKED IN` or `COOKED` card with time, actions, redirects, CAPTCHA
 boss fights, aura, and a Solari replay. Both conditions must pass when both are
@@ -31,6 +32,8 @@ condition-match rate, not a certification of site-wide agent readiness.
   final page's `innerText`, including off-screen content—not just the agent's
   truncated observation. Canvas, images and embedded frame text are not checked.
 - URL matching is case-sensitive and checks path + query, not host or hash.
+- Embedded-frame matching checks the case-insensitive `title` of a visible
+  iframe. It does not inspect cross-origin contents or prove form submission.
 - Both supplied conditions must pass. Empty contracts cannot pass vacuously.
 - A matching condition does **not** prove an arbitrary natural-language goal,
   purchase, signup, correct plan choice, or a website-caused failure. Choose

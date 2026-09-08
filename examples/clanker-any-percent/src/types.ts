@@ -24,8 +24,11 @@ export type Verification = {
 
 export type BrowserMode = "standard" | "stealth"
 
+export type ModelProvider = "groq" | "openai"
+
 export type RunOptions = {
   model?: string
+  provider?: ModelProvider
   browserMode?: BrowserMode
   packId?: string
   suiteId?: string
@@ -86,6 +89,7 @@ export type RunResult = {
   replayUrl: string | null
   isDemo?: boolean
   model?: string
+  provider?: ModelProvider
   browserMode?: BrowserMode
   packId?: string
   suiteId?: string
@@ -106,6 +110,7 @@ export type SuiteResult = {
   host: string
   pack: MissionPack
   model: string
+  provider: ModelProvider
   browserMode: BrowserMode
   completionRate: number
   alerts: RegressionAlert[]
@@ -128,11 +133,12 @@ export type DomainReport = {
   trendPoints: number | null
   failureCategories: Array<{ category: string; count: number }>
   failedMissions: Array<{ goal: string; count: number }>
-  variants: Array<{ packId: string; contractId: string; model: string; browserMode: BrowserMode; evaluationVersion: string; totalRuns: number; completionRate: number; medianTimeMs: number | null }>
+  variants: Array<{ packId: string; contractId: string; model: string; provider: ModelProvider; browserMode: BrowserMode; evaluationVersion: string; totalRuns: number; completionRate: number; medianTimeMs: number | null }>
   regressions: Array<{ runId: string; goal: string; alert: RegressionAlert }>
   journeys: Array<{
     contractId: string
     model: string
+    provider: ModelProvider
     browserMode: BrowserMode
     evaluationVersion: string
     latestRunId: string

@@ -66,7 +66,7 @@ test("builds an evidence-backed domain readiness report", () => {
   assert.equal(report.trendPoints, 100)
   assert.deepEqual(report.failureCategories, [{ category: "navigation", count: 2 }])
   assert.deepEqual(report.failedMissions, [{ goal: "Find returns", count: 2 }])
-  assert.deepEqual(report.variants, [{ packId: "ad-hoc", contractId: demoResult.contractId, evaluationVersion: "legacy", model: "gpt-5.4-mini", browserMode: "standard", totalRuns: 4, completionRate: 50, medianTimeMs: 15_000 }])
+  assert.deepEqual(report.variants, [{ packId: "ad-hoc", contractId: demoResult.contractId, evaluationVersion: "legacy", model: "gpt-5.4-mini", provider: "openai", browserMode: "standard", totalRuns: 4, completionRate: 50, medianTimeMs: 15_000 }])
   assert.equal(buildDomainReport("ikea.com", [demoResult]).isPreview, true)
 })
 

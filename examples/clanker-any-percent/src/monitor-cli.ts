@@ -1,6 +1,7 @@
 import { loadRuns } from "./store.js"
 import { getMissionPack, missionPacks } from "./mission-packs.js"
 import { runMissionPack } from "./monitor.js"
+import { defaultModel, configuredProvider } from "./model-provider.js"
 import type { BrowserMode } from "./types.js"
 
 const [url, packId] = process.argv.slice(2)
@@ -9,7 +10,8 @@ if (!url || !packId) {
   process.exit(1)
 }
 
-const models = (process.env.CLANKER_MODELS ?? process.env.OPENAI_MODEL ?? "gpt-5.4-mini").split(",").map((value) => value.trim()).filter(Boolean)
+const provider = configuredProvider()
+const models = (process.env.CLANKER_MODELS ?? (provider ? defaultModel(provider) : "qwen/qwen3.8-27b")).split(",").map((value) => value.trim()).filter(Boolean)
 const modes = (process.env.CLANKER_BROWSER_MODES ?? "standard").split(",").map((value) => value.trim())
 if (models.length > 3 || modes.length > 2 || modes.some((mode) => !["standard", "stealth"].includes(mode))) {
   throw new Error("Monitor allows at most 3 models and the standard/stealth browser modes.")
@@ -26,7 +28,7 @@ const suites = []
 for (const model of models) {
   for (const browserMode of modes as BrowserMode[]) {
     console.error(`Running ${packId} on ${url} with ${model} + Solari ${browserMode}...`)
-    suites.push(await runMissionPack({ url, packId, model, browserMode, scheduled: true }))
+    suites.push(await runMissionPack({ url, packId, model, provider, browserMode, scheduled: true }))
   }
 }
 
@@ -35,8 +37,9 @@ console.log(JSON.stringify({
   checkedAt: new Date().toISOString(),
   url,
   packId,
-  variants: suites.map(({ id, model, browserMode, completionRate, runs }) => ({
+  variants: suites.map(({ id, model, provider: suiteProvider, browserMode, completionRate, runs }) => ({
     id,
+    provider: suiteProvider,
     model,
     browserMode,
     completionRate,

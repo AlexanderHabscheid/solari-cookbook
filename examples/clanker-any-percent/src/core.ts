@@ -2,7 +2,7 @@ import { lookup } from "node:dns/promises"
 import { createHash } from "node:crypto"
 import { isIP } from "node:net"
 
-import type { BrowserMode, Challenge, DomainReport, FailureCategory, RegressionAlert, RunResult, Verification } from "./types.js"
+import type { BrowserMode, Challenge, DomainReport, FailureCategory, ModelProvider, RegressionAlert, RunResult, Verification } from "./types.js"
 
 const BLOCKED_HOSTS = new Set(["localhost", "metadata.google.internal"])
 export const EVALUATION_VERSION = "text-path-frame-v2-12steps"
@@ -154,14 +154,15 @@ function failureCategory(run: RunResult): FailureCategory {
 }
 
 const runModel = (run: RunResult) => run.model ?? "gpt-5.4-mini"
+const runProvider = (run: RunResult): ModelProvider => run.provider ?? "openai"
 const runBrowserMode = (run: RunResult): BrowserMode => run.browserMode ?? "standard"
 const runContract = (run: RunResult) => run.contractId ?? createHash("sha256").update(JSON.stringify([run.url, run.goal])).digest("hex").slice(0, 10)
-const cohortKey = (run: RunResult) => JSON.stringify([runContract(run), runModel(run), runBrowserMode(run), run.evaluationVersion ?? "legacy", run.packId ?? null, run.verification?.method ?? "ai_judge"])
+const cohortKey = (run: RunResult) => JSON.stringify([runContract(run), runProvider(run), runModel(run), runBrowserMode(run), run.evaluationVersion ?? "legacy", run.packId ?? null, run.verification?.method ?? "ai_judge"])
 
 export function detectRegression(current: RunResult, history: RunResult[]): RegressionAlert | undefined {
   const comparable = history
     .filter((run) => run.host === current.host && run.goal === current.goal)
-    .filter((run) => runModel(run) === runModel(current) && runBrowserMode(run) === runBrowserMode(current))
+    .filter((run) => runProvider(run) === runProvider(current) && runModel(run) === runModel(current) && runBrowserMode(run) === runBrowserMode(current))
     .filter((run) => run.packId === current.packId)
     .filter((run) => run.contractId === current.contractId)
     .filter((run) => run.url === current.url && run.evaluationVersion === current.evaluationVersion)
@@ -222,6 +223,7 @@ export function buildDomainReport(host: string, input: RunResult[]): DomainRepor
       contractId: runContract(group[0]!),
       evaluationVersion: group[0]!.evaluationVersion ?? "legacy",
       model: runModel(group[0]!),
+      provider: runProvider(group[0]!),
       browserMode: runBrowserMode(group[0]!),
       totalRuns: group.length,
       completionRate: Math.round((passed.length / group.length) * 100),
@@ -239,6 +241,7 @@ export function buildDomainReport(host: string, input: RunResult[]): DomainRepor
     return {
       contractId: runContract(group[0]!),
       model: runModel(group[0]!),
+      provider: runProvider(group[0]!),
       browserMode: runBrowserMode(group[0]!),
       evaluationVersion: group[0]!.evaluationVersion ?? "legacy",
       latestRunId: group[0]!.id,

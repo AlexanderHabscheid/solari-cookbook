@@ -1,8 +1,11 @@
 # CLANKER ANY%
 
-Standalone repository: <https://github.com/AlexanderHabscheid/clanker-any-percent>
+[![CLANKER monitor](https://github.com/AlexanderHabscheid/clanker-any-percent/actions/workflows/clanker-monitor.yml/badge.svg)](https://github.com/AlexanderHabscheid/clanker-any-percent/actions/workflows/clanker-monitor.yml)
+[![Live app](https://img.shields.io/badge/live-cook_the_clanker-c7ff00?style=flat-square&labelColor=090909)](https://clanker-any-percent.vercel.app)
 
-Live app: <https://clanker-any-percent.vercel.app>
+**[Run CLANKER](https://clanker-any-percent.vercel.app)** · **[Mint a Kanu challenge](https://clanker-any-percent.vercel.app/c?url=https%3A%2F%2Fgetkanu.com%2F&goal=Open+Kanu%27s+Book+a+Demo+scheduling+interface.+Do+not+enter+data+or+book.&frame=Book+a+call)**
+
+> Your landing page looks great. Can a clanker figure out how to become your customer?
 
 Test whether an AI browser can reach a predeclared milestone on a public website.
 
@@ -25,6 +28,14 @@ stable contract ID, and require three runs with the same contract, model, browse
 mode and evaluator before displaying `REPEATED CHECKS`. Rule-checked runs skip the separate judge call, reducing
 model cost.
 
+## Why this repository exists
+
+This is the clean, standalone home for CLANKER. It was built as a Solari
+cookbook use case for Pinetree Research's public shipping challenge. The
+[original implementation inside the required cookbook fork](https://github.com/AlexanderHabscheid/solari-cookbook/tree/main/examples/clanker-any-percent)
+remains public as provenance; this repository is the link to star, clone, and
+share.
+
 The joke is also the benchmark: the public learns which sites browser agents can
 actually use, while site owners get replayable agentic-UX failures for free.
 Every tested domain receives a public Agent Readiness Report with completion
@@ -44,7 +55,7 @@ condition-match rate, not a certification of site-wide agent readiness.
 - A matching condition does **not** prove an arbitrary natural-language goal,
   purchase, signup, correct plan choice, or a website-caused failure. Choose
   specific checks and inspect the replay. The agent can see the criteria.
-- Reports separate cohorts by contract, model, mode and evaluator version.
+- Reports separate cohorts by contract, provider, model, mode and evaluator version.
   Mixed cohorts have no aggregate trend. Three repeats is a minimum evidence
   gate, not statistical confidence; websites and model aliases can still change.
 - Synthetic demo results never contribute when real results exist.
@@ -66,21 +77,28 @@ but only implements narrow browser text/path checks—not those benchmark suites
 ```bash
 npm install
 export SOLARI_API_KEY=slr_live_...
+export GROQ_API_KEY=gsk_...
 export OPENAI_API_KEY=sk-...
 npm start
 ```
 
-Open <http://localhost:3000>. `See rigged demo` works without keys. Set
-`OPENAI_MODEL` to override `gpt-5.4-mini`, or `PORT` to change the port.
+Open <http://localhost:3000>. `See rigged demo` works without keys. When both
+providers are configured, Groq is the default and uses `qwen/qwen3.8-27b` for
+vision + strict JSON actions; OpenAI remains an explicit fallback when Groq is
+absent. Override with `GROQ_MODEL` or `OPENAI_MODEL`, or change `PORT`.
 Paid plans can opt into managed stealth and CAPTCHA solving with
 `SOLARI_STEALTH=true` and `SOLARI_CAPTCHA=true`; both default off so the app
 works on the free plan. CAPTCHA encounters are still detected and scored.
 
-Public deployments require `CLANKER_LIVE_RUNS=true` in addition to both API
-keys. `CLANKER_DAILY_RUN_LIMIT` defaults to six completed runs per UTC day.
-This is not a hard billing cap: failed attempts can cost money and concurrent
-serverless instances can race. Use provider spending limits; leave public live
-runs disabled until you accept that exposure. On Vercel, run evidence is
+Public deployments require `CLANKER_LIVE_RUNS=true` in addition to `SOLARI_API_KEY`
+and either `GROQ_API_KEY` (preferred) or `OPENAI_API_KEY`. The app reserves a
+default `$5/day` budget using a conservative `$0.25/run` estimate, then applies
+the smaller of that ceiling and `CLANKER_DAILY_RUN_LIMIT` (six by default).
+Configure `CLANKER_DAILY_BUDGET_USD` and `CLANKER_ESTIMATED_RUN_COST_USD` for a
+tighter local guard. This is a reservation guard, not a billing guarantee:
+provider spend limits are authoritative, and failed attempts plus concurrent
+serverless instances can still race. Set a hard `$5` spend limit in the Groq
+console (and OpenAI if you keep the fallback) before enabling public runs. On Vercel, run evidence is
 stored in a connected private Blob store; local development keeps using JSONL.
 
 ## Synthetic monitoring
@@ -112,19 +130,20 @@ CLANKER_DRY_RUN=true npm run monitor -- https://example.com commerce-core
 Compare up to three models and both Solari browser modes explicitly:
 
 ```bash
-CLANKER_MODELS=gpt-5.4-mini,gpt-5.4 \
+CLANKER_MODELS=qwen/qwen3.8-27b \
 CLANKER_BROWSER_MODES=standard,stealth \
 npm run monitor -- https://example.com saas-evaluation
 ```
 
 That example runs 12 browser tasks, so use it deliberately. The default runs
 one model × one browser mode × three missions. Domain reports group results by
-mission contract, model, browser mode and evaluator version, and surface
+mission contract, provider, model, browser mode and evaluator version, and surface
 regression alerts with replay links.
 
 The included `.github/workflows/clanker-monitor.yml` runs weekly only after
 repository variable `CLANKER_MONITOR_URL` is configured. Add repository secrets
-`SOLARI_API_KEY` and `OPENAI_API_KEY`; optionally set `CLANKER_MONITOR_PACK`.
+`SOLARI_API_KEY` and `GROQ_API_KEY`; `OPENAI_API_KEY` is optional fallback.
+Optionally set `CLANKER_MONITOR_PACK`.
 Manual workflow runs are also supported.
 
 ## Safety boundary

@@ -18,7 +18,7 @@ export async function runMissionPack(input: {
   const pack = getMissionPack(input.packId)
   const suiteId = randomBytes(4).toString("hex")
   const provider = input.provider ?? configuredProvider()
-  if (!provider) throw new Error("Monitoring needs GROQ_API_KEY (preferred) or OPENAI_API_KEY.")
+  if (!provider) throw new Error("Monitoring needs GROQ_API_KEY. OpenAI fallback must be explicitly enabled.")
   const model = input.model ?? defaultModel(provider)
   const browserMode = input.browserMode ?? "standard"
   const first = await validateChallenge({ url: input.url, goal: pack.missions[0] })

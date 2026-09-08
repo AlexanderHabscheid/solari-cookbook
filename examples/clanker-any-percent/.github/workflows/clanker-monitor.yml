@@ -23,7 +23,6 @@ jobs:
       SOLARI_API_KEY: ${{ secrets.SOLARI_API_KEY }}
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       GROQ_MODEL: qwen/qwen3.8-27b
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       CLANKER_MONITOR_URL: ${{ inputs.url || vars.CLANKER_MONITOR_URL }}
       CLANKER_MONITOR_PACK: ${{ inputs.pack || vars.CLANKER_MONITOR_PACK || 'commerce-core' }}
       OPENAI_MODEL: gpt-5.4-mini

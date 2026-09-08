@@ -10,7 +10,7 @@ type Environment = Record<string, string | undefined>
 
 export function configuredProvider(environment: Environment = process.env): ModelProvider | undefined {
   if (environment.GROQ_API_KEY) return "groq"
-  if (environment.OPENAI_API_KEY) return "openai"
+  if (environment.CLANKER_ALLOW_OPENAI_FALLBACK === "true" && environment.OPENAI_API_KEY) return "openai"
   return undefined
 }
 
@@ -35,6 +35,6 @@ export function resolveModel(modelOverride?: string, environment: Environment = 
   client: OpenAI
 } {
   const provider = providerOverride ?? configuredProvider(environment)
-  if (!provider) throw new Error("Live runs need SOLARI_API_KEY + GROQ_API_KEY (or OPENAI_API_KEY fallback).")
+  if (!provider) throw new Error("Live runs need SOLARI_API_KEY + GROQ_API_KEY. OpenAI fallback is disabled unless explicitly enabled.")
   return { provider, model: modelOverride ?? defaultModel(provider, environment), client: modelClient(provider, environment) }
 }

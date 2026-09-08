@@ -12,8 +12,12 @@ test("Groq wins provider selection when both keys exist", () => {
 })
 
 test("OpenAI remains an explicit fallback", () => {
-  const environment = { OPENAI_API_KEY: "openai-test" }
+  const environment = { OPENAI_API_KEY: "openai-test", CLANKER_ALLOW_OPENAI_FALLBACK: "true" }
   assert.equal(configuredProvider(environment), "openai")
   assert.equal(defaultModel("openai", environment), OPENAI_DEFAULT_MODEL)
   assert.equal(modelClient("openai", environment).baseURL, "https://api.openai.com/v1")
+})
+
+test("an OpenAI key alone cannot spend credits", () => {
+  assert.equal(configuredProvider({ OPENAI_API_KEY: "openai-test" }), undefined)
 })

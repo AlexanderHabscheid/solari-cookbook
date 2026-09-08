@@ -2,7 +2,6 @@ import { readFile } from "node:fs/promises"
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http"
 
 import { buildDomainReport, demoResult, detectRegression, validateChallenge } from "./core.js"
-import { budgetedDailyRunLimit, dailyBudgetUsd, estimatedRunCostUsd } from "./budget.js"
 import { missionPacks } from "./mission-packs.js"
 import { configuredProvider } from "./model-provider.js"
 import { allRuns, dailyRunCount, getRun, leaderboard, loadRuns, runsForHost, saveRun } from "./store.js"
@@ -17,12 +16,9 @@ const liveRunsEnabled = process.env.CLANKER_LIVE_RUNS === "true"
   && Boolean(configuredProvider())
 const modelProvider = configuredProvider() ?? null
 const configuredDailyRunLimit = Number(process.env.CLANKER_DAILY_RUN_LIMIT ?? 6)
-const configuredRunLimit = Number.isFinite(configuredDailyRunLimit)
+const dailyRunLimit = Number.isFinite(configuredDailyRunLimit)
   ? Math.max(1, Math.min(100, Math.floor(configuredDailyRunLimit)))
   : 6
-const dailyRunLimit = budgetedDailyRunLimit(configuredRunLimit)
-const dailyBudget = dailyBudgetUsd()
-const estimatedRunCost = estimatedRunCostUsd()
 
 function json(response: ServerResponse, status: number, value: unknown): void {
   response.writeHead(status, {
@@ -152,7 +148,7 @@ const server = createServer(async (request, response) => {
     return
   }
   if (request.method === "GET" && path === "/api/config") {
-    json(response, 200, { liveRunsEnabled, dailyRunLimit, dailyBudgetUsd: dailyBudget, estimatedRunCostUsd: estimatedRunCost, modelProvider })
+    json(response, 200, { liveRunsEnabled, dailyRunLimit, modelProvider })
     return
   }
   if (request.method === "GET" && path.startsWith("/api/domains/")) {

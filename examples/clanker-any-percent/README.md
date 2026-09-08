@@ -84,21 +84,20 @@ npm start
 
 Open <http://localhost:3000>. `See rigged demo` works without keys. When both
 providers are configured, Groq is the default and uses `qwen/qwen3.8-27b` for
-vision + strict JSON actions; OpenAI remains an explicit fallback when Groq is
-absent. Override with `GROQ_MODEL` or `OPENAI_MODEL`, or change `PORT`.
+vision + strict JSON actions. The model is available under Groq's Free-plan
+quotas. OpenAI cannot activate merely because its key exists: fallback requires
+`CLANKER_ALLOW_OPENAI_FALLBACK=true`. Override with `GROQ_MODEL` or
+`OPENAI_MODEL`, or change `PORT`.
 Paid plans can opt into managed stealth and CAPTCHA solving with
 `SOLARI_STEALTH=true` and `SOLARI_CAPTCHA=true`; both default off so the app
 works on the free plan. CAPTCHA encounters are still detected and scored.
 
-Public deployments require `CLANKER_LIVE_RUNS=true` in addition to `SOLARI_API_KEY`
-and either `GROQ_API_KEY` (preferred) or `OPENAI_API_KEY`. The app reserves a
-default `$5/day` budget using a conservative `$0.25/run` estimate, then applies
-the smaller of that ceiling and `CLANKER_DAILY_RUN_LIMIT` (six by default).
-Configure `CLANKER_DAILY_BUDGET_USD` and `CLANKER_ESTIMATED_RUN_COST_USD` for a
-tighter local guard. This is a reservation guard, not a billing guarantee:
-provider spend limits are authoritative, and failed attempts plus concurrent
-serverless instances can still race. Set a hard `$5` spend limit in the Groq
-console (and OpenAI if you keep the fallback) before enabling public runs. On Vercel, run evidence is
+Public deployments require `CLANKER_LIVE_RUNS=true`, `SOLARI_API_KEY`, and
+`GROQ_API_KEY`. `CLANKER_DAILY_RUN_LIMIT` defaults to six completed runs per UTC
+day. If OpenAI fallback is retained, put its key in a dedicated OpenAI project,
+set that project's monthly spend limit to `$5`, turn on `Enforce a hard limit`,
+and only then set `CLANKER_ALLOW_OPENAI_FALLBACK=true`. Spend enforcement is
+account-side, not estimated in application code. On Vercel, run evidence is
 stored in a connected private Blob store; local development keeps using JSONL.
 
 ## Synthetic monitoring
@@ -142,7 +141,8 @@ regression alerts with replay links.
 
 The included `.github/workflows/clanker-monitor.yml` runs weekly only after
 repository variable `CLANKER_MONITOR_URL` is configured. Add repository secrets
-`SOLARI_API_KEY` and `GROQ_API_KEY`; `OPENAI_API_KEY` is optional fallback.
+`SOLARI_API_KEY` and `GROQ_API_KEY`. OpenAI is not used unless its key and the
+explicit fallback flag are both configured.
 Optionally set `CLANKER_MONITOR_PACK`.
 Manual workflow runs are also supported.
 

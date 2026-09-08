@@ -1,5 +1,7 @@
 # CLANKER ANY%
 
+Standalone repository: <https://github.com/AlexanderHabscheid/clanker-any-percent>
+
 Live app: <https://clanker-any-percent.vercel.app>
 
 Test whether an AI browser can reach a predeclared milestone on a public website.
